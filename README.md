@@ -1,1 +1,1 @@
-# Kamil-extension-rebuild
+error handling: https://gemini.google.com/share/6849769945d7
