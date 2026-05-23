@@ -1,4 +1,66 @@
+// Configure tensorflow first to avoid eval errors
+self.tfConfig = {
+	environments: {
+		development: true, // AANPASSEN NAAR PRODUCTION
+	},
+	flags: {
+		IS_BROWSER: true,
+	},
+};
+
+// Prevent crashes due to missing process.env.NODE_ENV in TensorFlow.js
+self.process = { env: { NODE_ENV: "development" } }; // AANPASSEN NAAR PRODUCTION
+
+// Core => basic tensor logic
+// Backend-CPU => calculations without WebGL optimalization
+// Layers => needed for the model loading and prediction logic
+importScripts("tf-core.min.js", "tf-backend-cpu.min.js", "tf-layers.min.js");
+
 console.log("Background script running");
+
+let model = null;
+let useLocalAI = false; // False until computer has proven to be powerful enough to run the model locally
+
+async function initExtension() {
+	const performanceThreshold = 100; // Time in ms
+
+	try {
+		console.log("Initializing AI configuration");
+
+		// Explicitly set the backend to cpu rendering to avoid any WebGL related issues
+		await tf.setBackend("cpu");
+
+		console.log("AI model loaded successfully");
+
+		const modelUrl = chrome.runtime.getURL("model/model.json");
+		model = await tf.loadLayersModel(modelUrl);
+
+		console.log("Starting performance benchmarking");
+		const startTime = performance.now();
+
+        if (model) {
+            const dummyInput = tf.zeros([1, 31]);
+            const prediction = model.predict(dummyInput);
+            dummyInput.dispose();
+            prediction.dispose();
+        }
+
+		const endTime = performance.now();
+		const duration = endTime - startTime;
+		console.log(`Performance benchmark completed in ${duration.toFixed(2)}ms`);
+
+		if (duration < performanceThreshold) {
+			useLocalAI = true; // Computer has proven itself capable of running the model locally
+			console.log("Local AI model loaded and ready for use");
+		} else {
+			console.warn("Performance benchmark exceeded threshold, falling back on server-sided AI");
+		}
+	} catch (err) {
+		console.error("Error while initializing AI model: ", err);
+	}
+}
+
+initExtension();
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (changeInfo.status === "complete" && tab.url?.startsWith("http")) {
@@ -12,7 +74,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 			},
 			body: JSON.stringify({ url: tab.url }),
 		})
-            // Async function to handle the response and check for errors
+			// Async function to handle the response and check for errors
 			.then(async (res) => {
 				if (!res.ok) {
 					const contentType = res.headers.get("content-type");
