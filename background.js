@@ -1,7 +1,13 @@
 // Core => basic tensor logic
 // Backend-CPU => calculations without WebGL optimalization
 // Layers => needed for the model loading and prediction logic
-importScripts("config/tf-config.js", "tf-core.min.js", "tf-backend-cpu.min.js", "tf-layers.min.js", "utils/url-tokenizer.js");
+importScripts(
+	"config/tf-config.js",
+	"tf-core.min.js",
+	"tf-backend-cpu.min.js",
+	"tf-layers.min.js",
+	"utils/url-tokenizer.js",
+);
 
 console.log("Background script running and modules imported");
 
@@ -51,42 +57,35 @@ initExtension();
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (changeInfo.status === "complete" && tab.url?.startsWith("http")) {
-		console.log("Tab updated:", tab.url);
+		console.log(`Tab updated: ${tab.url}`);
 
-		// Make a post request to backend to check if the URL is safe
-		fetch("http://localhost:5001/api/check-url", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ url: tab.url }),
-		})
-			// Async function to handle the response and check for errors
-			.then(async (res) => {
-				if (!res.ok) {
-					const contentType = res.headers.get("content-type");
-					if (contentType && contentType.includes("application/json")) {
-						const errorData = await res.json();
-						throw new Error(`Server error: (${res.status}): ${JSON.stringify(errorData)}`);
-					} else {
-						const errorText = await res.text();
-						throw new Error(`Server Error: (${res.status}): ${errorText.substring(0, 100)}...`);
-					}
-				}
+		if (useLocalAI && model) {
+			console.log("Processing URL with local AI");
 
-				return res.json();
-			})
-			.then((data) => {
-				if (data.status === "unsafe") {
-					// Alert the user about the unsafe URL
-					// SOON TO BE REPLACE WITH A REAL EXTENSION POPUP ALERT
-					console.log("Unsafe URL detected: " + data.reason);
-					// Redirect to educational page
-					chrome.tabs.update(tabId, { url: data.redirectUrl });
-				}
-			})
-			.catch((err) => {
-				console.error("Error checking URL: ", err);
-			});
+			const featureArray = extractFeaturesFromUrl(tab.url);
+			const inputTensor = tf.tensor2d([featureArray], [1, 31]);
+			const prediction = model.predict(inputTensor);
+			const scoreData = prediction.dataSync();
+			const phishingScore = scoreData[0];
+
+			inputTensor.dispose();
+			prediction.dispose();
+
+			console.log(`AI verdict for ${tab.url}: ${phishingScore.toFixed(4)}`);
+
+			if (phishingScore > 0.8) {
+				console.warn(`LOCAL AI ALERT: PHISHING DETECTED`);
+				// ADD CODE TO SHOW POPUP WITH CORRECT VERSION OF KAMIL
+
+				return;
+			}
+
+			if (phishingScore > 0.5) {
+				console.warn(`LOCAL AI IS SUSPICIOUS, MAKING SERVER-SIDED CHECK FOR SECOND OPINION`);
+			}
+		} else {
+			console.log("Local AI not available, sending URL to server for further analysis");
+			// ADD CODE TO SEND URL TO SERVER AND HANDLE RESPONSE
+		}
 	}
 });
