@@ -1,22 +1,9 @@
-// Configure tensorflow first to avoid eval errors
-self.tfConfig = {
-	environments: {
-		development: true, // AANPASSEN NAAR PRODUCTION
-	},
-	flags: {
-		IS_BROWSER: true,
-	},
-};
-
-// Prevent crashes due to missing process.env.NODE_ENV in TensorFlow.js
-self.process = { env: { NODE_ENV: "development" } }; // AANPASSEN NAAR PRODUCTION
-
 // Core => basic tensor logic
 // Backend-CPU => calculations without WebGL optimalization
 // Layers => needed for the model loading and prediction logic
-importScripts("tf-core.min.js", "tf-backend-cpu.min.js", "tf-layers.min.js");
+importScripts("config/tf-config.js", "tf-core.min.js", "tf-backend-cpu.min.js", "tf-layers.min.js", "utils/url-tokenizer.js");
 
-console.log("Background script running");
+console.log("Background script running and modules imported");
 
 let model = null;
 let useLocalAI = false; // False until computer has proven to be powerful enough to run the model locally
@@ -38,12 +25,12 @@ async function initExtension() {
 		console.log("Starting performance benchmarking");
 		const startTime = performance.now();
 
-        if (model) {
-            const dummyInput = tf.zeros([1, 31]);
-            const prediction = model.predict(dummyInput);
-            dummyInput.dispose();
-            prediction.dispose();
-        }
+		if (model) {
+			const dummyInput = tf.zeros([1, 31]);
+			const prediction = model.predict(dummyInput);
+			dummyInput.dispose();
+			prediction.dispose();
+		}
 
 		const endTime = performance.now();
 		const duration = endTime - startTime;
