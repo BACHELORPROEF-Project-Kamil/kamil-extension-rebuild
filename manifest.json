@@ -1,0 +1,11 @@
+{
+    "mmanifest_version": 3,
+    "name": "Kamil",
+    "version": "1.0",
+    "description": "De digitale kameleon die jou beschermd tegen phishing.",
+    "permissions": ["tabs", "webNavigation"],
+    "host_permissions": ["http://localhost/5001/*"],
+    "background": {
+        "service_worker": "background.js"
+    }
+}
