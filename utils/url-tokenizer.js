@@ -52,6 +52,11 @@ function checkSubdomainCount(hostname) {
     }
 }
 
+// This function checks if the URL uses HTTPS.
+function checkHTTPS(url) {
+    return url.startsWith("https://") ? 1 : -1;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -79,6 +84,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 6: Subdomains
         features[6] = checkSubdomainCount(hostname);
+
+        // Index 7: HTTPS
+        features[7] = checkHTTPS(urlString);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
