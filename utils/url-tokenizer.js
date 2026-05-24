@@ -278,35 +278,78 @@ function checkServerFormHandler(hostname) {
 		}
 	} catch (err) {
 		console.log("Error while checking server form handler: ", err);
-        return 0; // Could be suspicious
+		return 0; // Could be suspicious
 	}
 }
 
+// This function checks if the page contains email forms that could be used to steal information.
 function checkInfoEmail() {
-    try {
-        const forms = document.getElementsByTagName("form");
+	try {
+		const forms = document.getElementsByTagName("form");
 
-        for (let i = 0; i < forms.length; i++) {
-            const action = forms[i].getAttribute("action");
-            if (action && action.toLowerCase().startsWith("mailto:")) {
-                return 1; // Could be phishing
-            }
-        }
+		for (let i = 0; i < forms.length; i++) {
+			const action = forms[i].getAttribute("action");
+			if (action && action.toLowerCase().startsWith("mailto:")) {
+				return 1; // Could be phishing
+			}
+		}
 
-        const anchors = document.getElementsByTagName("a");
+		const anchors = document.getElementsByTagName("a");
 
-        for (let i = 0; i < anchors.length; i++) {
-            const href = anchors[i].getAttribute("href");
-            if (href && href.toLowerCase().startsWith("mailto:")) {
-                return 1; // Could be phishing
-            }
-        }
+		for (let i = 0; i < anchors.length; i++) {
+			const href = anchors[i].getAttribute("href");
+			if (href && href.toLowerCase().startsWith("mailto:")) {
+				return 1; // Could be phishing
+			}
+		}
 
-        return -1; // Likely safe
-    } catch (err) {
-        console.log("Error while checking info email: ", err);
-        return 0; // Could be suspicious
-    }
+		return -1; // Likely safe
+	} catch (err) {
+		console.log("Error while checking info email: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
+// This function checks if the URL is abnormal by looking for suspicious patterns in the hostname and page title.
+function checkAbnormalURL(hostname, urlString) {
+	try {
+		const protocolMatches = urlString.match(/^(https?):\/\//i);
+		if (protocolMatches && protocolMatches.length > 1) {
+			return 1; // Could be phishing
+		}
+
+		const pageTitle = document.title ? document.title.toLowerCase() : "";
+		const commonTargets = [
+			"paypal",
+			"kbc",
+			"ing",
+			"belfius",
+			"bnpparibas",
+			"hello bank",
+			"n26",
+			"revolut",
+			"keytrade bank",
+			"argenta",
+			"microsoft",
+			"google",
+			"facebook",
+			"twitter",
+			"linkedin",
+			"amazon",
+			"apple",
+			"itsme",
+		];
+
+		for (let target of commonTargets) {
+			if (pageTitle.includes(target) && !hostname.toLowerCase().includes(target)) {
+				return 1; // Could be phishing
+			}
+		}
+		return -1; // Likely safe
+	} catch (err) {
+		console.log("Error while checking abnormal URL: ", err);
+		return 0; // Could be suspicious
+	}
 }
 
 function extractFeaturesFromUrl(urlString) {
@@ -361,12 +404,14 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 14: LinksInScript
 		features[14] = checkLinksInScript(hostname);
 
-        // Index 15: ServerFormHandler
-        features[15] = checkServerFormHandler(hostname);
+		// Index 15: ServerFormHandler
+		features[15] = checkServerFormHandler(hostname);
 
-        // Index 16: InfoEmail
-        features[16] = checkInfoEmail();
+		// Index 16: InfoEmail
+		features[16] = checkInfoEmail();
 
+        // Index 17: AbnormalURL
+        features[17] = checkAbnormalURL(hostname, urlString);
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
