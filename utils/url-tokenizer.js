@@ -63,6 +63,23 @@ function checkDomainRegistrationLength(hostname) {
     return 0;
 }
 
+// This function checks if the favicon of the page matches the hostname.
+function checkFavicon(hostname) {
+    const faviconNode = document.querySelector("link[rel~='icon']");
+
+    if (!faviconNode) {
+        return 0; // Could be suspicious
+    }
+
+    const faviconUrl = new URL(faviconNode.href);
+
+    if (faviconUrl.hostname === hostname) {
+        return -1; // Likely safe
+    } else {
+        return 1; // Could be phishing
+    }
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -96,6 +113,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 8: DomainRegistrationLength
         features[8] = checkDomainRegistrationLength(hostname);
+
+        // Index 9: Favicon
+        features[9] = checkFavicon(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
