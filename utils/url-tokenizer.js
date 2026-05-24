@@ -6,6 +6,17 @@ function checkIPAdress(hostname) {
 	return ipPattern.test(hostname) ? 1 : -1;
 }
 
+// This function checks the length of the URL and categorizes it.
+function checkURLLength(url) {
+    if (url.length < 54) {
+        return -1; // Safe
+    } else if (url.length >= 54 && url.length <= 75) {
+        return 0; // Suspicious
+    } else {
+        return 1; // Phishing
+    }
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -16,6 +27,8 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 0: UsingIP
 		features[0] = checkIPAdress(hostname);
 
+        // Index 1: LongURL
+        features[1] = checkURLLength(urlString);
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
