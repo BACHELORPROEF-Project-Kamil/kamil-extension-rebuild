@@ -9,11 +9,11 @@ function checkIPAdress(hostname) {
 // This function checks the length of the URL and categorizes it.
 function checkURLLength(url) {
 	if (url.length < 54) {
-		return -1; // Safe
+		return -1; // Likely safe
 	} else if (url.length >= 54 && url.length <= 75) {
-		return 0; // Suspicious
+		return 0; // Could be suspicious
 	} else {
-		return 1; // Phishing
+		return 1; // Could be phishing
 	}
 }
 
@@ -40,6 +40,18 @@ function checkPreSuffix(hostname) {
     return preSuffixPattern.test(hostname) ? 1 : -1;
 }
 
+// This function counts the number of subdomains in the hostname.
+function checkSubdomainCount(hostname) {
+    const subdomainCount = hostname.split(".").length - 1;
+    if (subdomainCount === 0) {
+        return -1; // Likely safe
+    } else if (subdomainCount === 1) {
+        return 0; // Could be suspicious
+    } else {
+        return 1; // Could be phishing
+    }
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -64,6 +76,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 5: PrefixSuffix-
         features[5] = checkPreSuffix(hostname);
+
+        // Index 6: Subdomains
+        features[6] = checkSubdomainCount(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
