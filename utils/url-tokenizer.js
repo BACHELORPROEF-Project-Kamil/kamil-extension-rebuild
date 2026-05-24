@@ -153,44 +153,100 @@ function checkRequestURL(hostname) {
 
 // This function checks the percentage of unsafe anchors.
 function checkAnchorURL(hostname) {
-    try {
-        const anchors = document.getElementsByTagName("a");
+	try {
+		const anchors = document.getElementsByTagName("a");
 
-        if (anchors.length === 0) {
-            return -1; // Likely safe
-        }
+		if (anchors.length === 0) {
+			return -1; // Likely safe
+		}
 
-        let unsafeAnchorCount = 0;
+		let unsafeAnchorCount = 0;
 
-        for (let i = 0; i < anchors.length; i++) {
-            const href = anchors[i].getAttribute("href");
+		for (let i = 0; i < anchors.length; i++) {
+			const href = anchors[i].getAttribute("href");
 
-            if (!href || href === "#" || href.toLowerCase().startsWith("javascript:void(0)")) {
-                unsafeAnchorCount++;
-                continue;
-            }
+			if (!href || href === "#" || href.toLowerCase().startsWith("javascript:void(0)")) {
+				unsafeAnchorCount++;
+				continue;
+			}
 
-            try {
-                const anchorUrl = new URL(href, document.baseURI);
+			try {
+				const anchorUrl = new URL(href, document.baseURI);
 
-                if (anchorUrl.hostname !== hostname && anchorUrl.hostname !== "") {
-                    unsafeAnchorCount++;
-                }
-            } catch (err) {
-                unsafeAnchorCount++;
-            }
-        }
+				if (anchorUrl.hostname !== hostname && anchorUrl.hostname !== "") {
+					unsafeAnchorCount++;
+				}
+			} catch (err) {
+				unsafeAnchorCount++;
+			}
+		}
 
-        const unsafeAnchorPercentage = (unsafeAnchorCount / anchors.length) * 100;
+		const unsafeAnchorPercentage = (unsafeAnchorCount / anchors.length) * 100;
 
-        if (unsafeAnchorPercentage < 25) {
-            return -1; // Likely safe
-        } else if (unsafeAnchorPercentage >= 25 && unsafeAnchorPercentage <= 75) {
-            return 0; // Could be suspicious
-        } else {
-            return 1; // Could be phishing
-        }
-    }
+		if (unsafeAnchorPercentage < 25) {
+			return -1; // Likely safe
+		} else if (unsafeAnchorPercentage >= 25 && unsafeAnchorPercentage <= 75) {
+			return 0; // Could be suspicious
+		} else {
+			return 1; // Could be phishing
+		}
+	} catch (err) {
+		console.log("Error while checking anchor URL: ", err);
+		return 0;
+	}
+}
+
+// This function checks the percentage of external links in scripts, stylesheets and meta tags.
+function checkLinksInScript(hostname) {
+	try {
+		const scripts = document.getElementsByTagName("script");
+		const links = document.getElementsByTagName("link");
+		const metas = document.getElementsByTagName("meta");
+
+		const allElements = [...scripts, ...links, ...metas];
+
+		if (allElements.length === 0) {
+			return -1; // Likely safe
+		}
+
+		let externalLinkCount = 0;
+
+		allElements.forEach((element) => {
+			let urlAttribute = element.src || element.href;
+
+			if (element.tagName.toLowerCase() === "meta" && element.getAttribute("content")) {
+				const content = element.getAttribute("content");
+				if (content.toLowerCase().includes("url=")) {
+					urlAttribute = content.split("url=")[1];
+				}
+			}
+
+			if (urlAttribute) {
+				try {
+					const absoluteUrl = new URL(urlAttribute, document.baseURI);
+
+					if (absoluteUrl.hostname !== hostname && absoluteUrl.hostname !== "") {
+						externalLinkCount++;
+					}
+				} catch (err) {
+					// Skip invalid URLs
+				}
+			}
+		});
+
+		const externalLinkPercentage = (externalLinkCount / allElements.length) * 100;
+
+		if (externalLinkPercentage < 25) {
+			return -1; // Likely safe
+		} else if (externalLinkPercentage >= 25 && externalLinkPercentage <= 75) {
+			return 0; // Could be suspicious
+		} else {
+			return 1; // Could be phishing
+		}
+	} catch (err) {
+		console.log("Error while checking links in script: ", err);
+		return 0;
+	}
 }
 
 function extractFeaturesFromUrl(urlString) {
@@ -236,12 +292,14 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 11: HTTPSDomainURL
 		features[11] = checkHTTPSDomainURL(hostname);
 
-        // Index 12: RequestURL
-        features[12] = checkRequestURL(hostname);
+		// Index 12: RequestURL
+		features[12] = checkRequestURL(hostname);
 
-        // Index 13: AnchorURL
-        features[13] = checkAnchorURL(hostname);
-        
+		// Index 13: AnchorURL
+		features[13] = checkAnchorURL(hostname);
+
+		// Index 14: LinksInScript
+		features[14] = checkLinksInScript(hostname);
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
