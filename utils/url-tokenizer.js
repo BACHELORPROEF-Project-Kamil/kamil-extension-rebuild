@@ -91,6 +91,17 @@ function checkNonStandardPort(urlObject) {
     }
 }
 
+// This function checks if the hostname contains "https".
+function checkHTTPSDomainURL(hostname) {
+    const lowerCaseHostname = hostname.toLowerCase();
+
+    if (lowerCaseHostname.includes("https")) {
+        return 1; // Could be phishing
+    } else {
+        return -1; // Likely safe
+    }
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -131,7 +142,8 @@ function extractFeaturesFromUrl(urlString) {
         // Index 10: NonStandardPort
         features[10] = checkNonStandardPort(urlObject);
 
-
+        // Index 11: HTTPSDomainURL
+        features[11] = checkHTTPSDomainURL(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
