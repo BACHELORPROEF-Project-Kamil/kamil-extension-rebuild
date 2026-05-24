@@ -249,6 +249,7 @@ function checkLinksInScript(hostname) {
 	}
 }
 
+// This function checks if the page contains forms that submit to external servers or have no action.
 function checkServerFormHandler(hostname) {
 	try {
 		const forms = document.getElementsByTagName("form");
@@ -279,6 +280,33 @@ function checkServerFormHandler(hostname) {
 		console.log("Error while checking server form handler: ", err);
         return 0; // Could be suspicious
 	}
+}
+
+function checkInfoEmail() {
+    try {
+        const forms = document.getElementsByTagName("form");
+
+        for (let i = 0; i < forms.length; i++) {
+            const action = forms[i].getAttribute("action");
+            if (action && action.toLowerCase().startsWith("mailto:")) {
+                return 1; // Could be phishing
+            }
+        }
+
+        const anchors = document.getElementsByTagName("a");
+
+        for (let i = 0; i < anchors.length; i++) {
+            const href = anchors[i].getAttribute("href");
+            if (href && href.toLowerCase().startsWith("mailto:")) {
+                return 1; // Could be phishing
+            }
+        }
+
+        return -1; // Likely safe
+    } catch (err) {
+        console.log("Error while checking info email: ", err);
+        return 0; // Could be suspicious
+    }
 }
 
 function extractFeaturesFromUrl(urlString) {
@@ -335,7 +363,10 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 15: ServerFormHandler
         features[15] = checkServerFormHandler(hostname);
-        
+
+        // Index 16: InfoEmail
+        features[16] = checkInfoEmail();
+
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
