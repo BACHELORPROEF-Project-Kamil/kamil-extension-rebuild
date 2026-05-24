@@ -375,6 +375,35 @@ function checkWebsiteForwarding() {
 	}
 }
 
+function checkStatusBarCustomization() {
+	try {
+		const anchors = document.getElementsByTagName("a");
+
+		for (let i = 0; i < anchors.length; i++) {
+			const onMouseOver = anchors[i].getAttribute("onmouseover");
+			const onMouseMove = anchors[i].getAttribute("onmousemove");
+
+			if (
+				onMouseOver &&
+				(onMouseOver.toLowerCase().includes("window.status") || onMouseOver.toLowerCase().includes("status="))
+			) {
+				return 1; // Could be phishing
+			}
+			if (
+				onMouseMove &&
+				(onMouseMove.toLowerCase().includes("window.status") || onMouseMove.toLowerCase().includes("status="))
+			) {
+				return 1; // Could be phishing
+			}
+		}
+
+		return -1; // Likely safe
+	} catch (err) {
+		console.log("Error while checking status bar customization: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -438,6 +467,9 @@ function extractFeaturesFromUrl(urlString) {
 
 		// Index 18: WebsiteForwarding
 		features[18] = checkWebsiteForwarding();
+
+        // Index 19: StatusBarCustomization
+        features[19] = checkStatusBarCustomization();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
