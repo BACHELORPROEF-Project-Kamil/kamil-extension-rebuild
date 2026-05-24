@@ -28,6 +28,12 @@ function checkAtSymbol(url) {
     return url.includes("@") ? 1 : -1;
 }
 
+// This function checks if the URL contains common redirecting patterns.
+function checkRedirecting(hostname) {
+    const redirectingPatterns = ["/@", "//", "/redirect?", "/redir?", "/redirect/", "/redir/"];
+    return redirectingPatterns.includes(hostname) ? 1 : -1;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -47,6 +53,8 @@ function extractFeaturesFromUrl(urlString) {
         // Index 3: Symbol@
         features[3] = checkAtSymbol(urlString);
 
+        // Index 4: Redirecting//
+        features[4] = checkRedirecting(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
