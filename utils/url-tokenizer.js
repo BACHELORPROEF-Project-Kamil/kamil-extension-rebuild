@@ -8,13 +8,19 @@ function checkIPAdress(hostname) {
 
 // This function checks the length of the URL and categorizes it.
 function checkURLLength(url) {
-    if (url.length < 54) {
-        return -1; // Safe
-    } else if (url.length >= 54 && url.length <= 75) {
-        return 0; // Suspicious
-    } else {
-        return 1; // Phishing
-    }
+	if (url.length < 54) {
+		return -1; // Safe
+	} else if (url.length >= 54 && url.length <= 75) {
+		return 0; // Suspicious
+	} else {
+		return 1; // Phishing
+	}
+}
+
+// This function checks if the hostname belongs to a known URL shortening service.
+function checkShorteningService(hostname) {
+	const shorteners = ["bit.ly", "goo.gl", "tinyurl.com", "ow.ly", "t.co", "is.gd", "buff.ly", "adf.ly", "bit.do", "cutt.ly"];
+	return shorteners.includes(hostname) ? 1 : -1;
 }
 
 function extractFeaturesFromUrl(urlString) {
@@ -27,8 +33,13 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 0: UsingIP
 		features[0] = checkIPAdress(hostname);
 
-        // Index 1: LongURL
-        features[1] = checkURLLength(urlString);
+		// Index 1: LongURL
+		features[1] = checkURLLength(urlString);
+
+		// Index 2: ShortURL
+		features[2] = checkShorteningService(hostname);
+
+        
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
