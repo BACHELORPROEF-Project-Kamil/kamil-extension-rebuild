@@ -352,6 +352,29 @@ function checkAbnormalURL(hostname, urlString) {
 	}
 }
 
+// This function checks the number of redirects that occurred during page load.
+function checkWebsiteForwarding() {
+	try {
+		const navigationEntries = performance.getEntriesByType("navigation");
+
+		if (navigationEntries.length > 0) {
+			const redirectCount = navigationEntries[0].redirectCount;
+
+			if (redirectCount <= 1) {
+				return -1; // Likely safe
+			} else if (redirectCount > 1 && redirectCount < 4) {
+				return 0; // Could be suspicious
+			} else {
+				return 1; // Could be phishing
+			}
+		}
+		return 0; // Could be suspicious
+	} catch (err) {
+		console.log("Error while checking website forwarding: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -410,8 +433,11 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 16: InfoEmail
 		features[16] = checkInfoEmail();
 
-        // Index 17: AbnormalURL
-        features[17] = checkAbnormalURL(hostname, urlString);
+		// Index 17: AbnormalURL
+		features[17] = checkAbnormalURL(hostname, urlString);
+
+		// Index 18: WebsiteForwarding
+		features[18] = checkWebsiteForwarding();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
