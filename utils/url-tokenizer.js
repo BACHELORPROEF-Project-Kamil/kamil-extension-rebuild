@@ -80,6 +80,17 @@ function checkFavicon(hostname) {
     }
 }
 
+// This function checks if the URL is using a non-standard port.
+function checkNonStandardPort(urlObject) {
+    const port = urlObject.port;
+
+    if (port === "" || port === "80" || port === "443") {
+        return -1; // Likely safe
+    } else {
+        return 1; // Could be suspicious
+    }
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -116,6 +127,11 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 9: Favicon
         features[9] = checkFavicon(hostname);
+
+        // Index 10: NonStandardPort
+        features[10] = checkNonStandardPort(urlObject);
+
+
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
