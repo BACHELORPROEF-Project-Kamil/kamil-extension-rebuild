@@ -23,6 +23,11 @@ function checkShorteningService(hostname) {
 	return shorteners.includes(hostname) ? 1 : -1;
 }
 
+// This function checks if the URL contains an "@" symbol.
+function checkAtSymbol(url) {
+    return url.includes("@") ? 1 : -1;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -39,7 +44,10 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 2: ShortURL
 		features[2] = checkShorteningService(hostname);
 
-        
+        // Index 3: Symbol@
+        features[3] = checkAtSymbol(urlString);
+
+
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
