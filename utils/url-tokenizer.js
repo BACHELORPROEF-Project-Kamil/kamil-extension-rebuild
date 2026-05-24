@@ -425,6 +425,7 @@ function checkDisabledRightClick() {
 	}
 }
 
+// This function checks if the page uses pop-up windows.
 function checkUsingPopUpWindow() {
 	try {
 		const bodyHTML = document.body ? document.body.innerHTML.toLocaleLowerCase() : "";
@@ -446,6 +447,50 @@ function checkUsingPopUpWindow() {
 		return -1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking using pop-up window: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
+// This function checks if the page contains hidden iframes that could be used for redirection.
+function checkIFrameRedirection() {
+	try {
+		const iframes = document.getElementsByTagName("iframe");
+
+		if (iframes.length === 0) {
+			return -1; // Likely safe
+		}
+
+		for (let i = 0; i < iframes.length; i++) {
+			const iframe = iframes[i];
+
+			const frameborder = iframe.getAttribute("frameborder");
+			const style = iframe.getAttribute("style") ? iframe.getAttribute("style").toLowerCase() : "";
+			const width = iframe.getAttribute("width");
+			const height = iframe.getAttribute("height");
+
+			if (frameborder === "0") {
+				return 1; // Could be phishing
+			}
+
+			if (style.includes("visibility:hidden") || style.includes("display:none") || style.includes("opacity:0")) {
+				return 1; // Could be phishing
+			}
+
+			if (
+				width === "0" ||
+				height === "0" ||
+				width === "1" ||
+				height === "1" ||
+				style.includes("width:0") ||
+				style.includes("height:0")
+			) {
+				return 1; // Could be phishing
+			}
+		}
+
+		return 0; // Could be suspicious
+	} catch (err) {
+		console.log("Error while checking iframe redirection: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -522,6 +567,9 @@ function extractFeaturesFromUrl(urlString) {
 
 		// Index 21: UsingPopUpWindow
 		features[21] = checkUsingPopUpWindow();
+
+		// Index 22: IFrameRedirection
+		features[22] = checkIFrameRedirection();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
