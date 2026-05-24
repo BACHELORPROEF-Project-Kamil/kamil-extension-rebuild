@@ -425,6 +425,31 @@ function checkDisabledRightClick() {
 	}
 }
 
+function checkUsingPopUpWindow() {
+	try {
+		const bodyHTML = document.body ? document.body.innerHTML.toLocaleLowerCase() : "";
+
+		if (bodyHTML.includes("window.open(") || bodyHTML.includes("window.window.open ")) {
+			return 1; // Could be phishing
+		}
+
+		const anchors = document.getElementsByTagName("a");
+
+		for (let i = 0; i < anchors.length; i++) {
+			const onClick = anchors[i].getAttribute("onclick");
+
+			if (onClick && onClick.toLowerCase().includes("window.open")) {
+				return 1; // Could be phishing
+			}
+		}
+
+		return -1; // Likely safe
+	} catch (err) {
+		console.log("Error while checking using pop-up window: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -494,6 +519,9 @@ function extractFeaturesFromUrl(urlString) {
 
 		// Index 20: DisabledRightClick
 		features[20] = checkDisabledRightClick();
+
+		// Index 21: UsingPopUpWindow
+		features[21] = checkUsingPopUpWindow();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
