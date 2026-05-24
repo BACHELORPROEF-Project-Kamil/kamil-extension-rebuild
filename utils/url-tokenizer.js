@@ -495,6 +495,60 @@ function checkIFrameRedirection() {
 	}
 }
 
+// This function checks the age of the domain.
+function checkAgeOfDomain() {
+    // SOON TO BE IMPLEMENTED
+
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks the DNS recording of the domain.
+function checkDNSRecording() {
+    // SOON TO BE IMPLEMENTED
+
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks the website traffic of the domain.
+function checkWebsiteTraffic() {
+    // SOON TO BE IMPLEMENTED
+    
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks the PageRank of the domain.
+function checkPageRank() {
+    // SOON TO BE IMPLEMENTED
+    
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks if the domain is indexed by Google.
+function checkGoogleIndex() {
+    // SOON TO BE IMPLEMENTED
+    
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks the number of links pointing to the page.
+function checkLinksPointingToPage() {
+    // SOON TO BE IMPLEMENTED
+    
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function checks the statistical report of the domain from a threat intelligence service.
+function checkStatisticalReport() {
+    // SOON TO BE IMPLEMENTED
+    
+    return 0; // Could be suspicious (temporary return value until implemented)
+}
+
+// This function is a placeholder for the actual classification logic.
+function checkClass(urlString) {
+    return 0;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -570,6 +624,27 @@ function extractFeaturesFromUrl(urlString) {
 
 		// Index 22: IFrameRedirection
 		features[22] = checkIFrameRedirection();
+
+		// Index 23: AgeOfDomain
+		features[23] = checkAgeOfDomain();
+
+        // Index 24: DNSRecording
+        features[24] = checkDNSRecording();
+
+        // Index 25: WebsiteTraffic
+        features[25] = checkWebsiteTraffic();
+
+        // Index 26: PageRank
+        features[26] = checkPageRank();
+
+        // Index 27: GoogleIndex
+        features[27] = checkGoogleIndex();
+
+        // Index 28: LinksPointingToPage
+        features[28] = checkLinksPointingToPage();
+
+        // Index 29: StatisticalReport
+        features[29] = checkStatisticalReport();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
