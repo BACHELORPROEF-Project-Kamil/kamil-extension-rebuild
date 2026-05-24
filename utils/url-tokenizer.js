@@ -147,7 +147,7 @@ function checkRequestURL(hostname) {
 		}
 	} catch (err) {
 		console.log("Error while checking request URL: ", err);
-		return 0;
+		return 0; // Could be suspicious
 	}
 }
 
@@ -192,7 +192,7 @@ function checkAnchorURL(hostname) {
 		}
 	} catch (err) {
 		console.log("Error while checking anchor URL: ", err);
-		return 0;
+		return 0; // Could be suspicious
 	}
 }
 
@@ -245,7 +245,39 @@ function checkLinksInScript(hostname) {
 		}
 	} catch (err) {
 		console.log("Error while checking links in script: ", err);
-		return 0;
+		return 0; // Could be suspicious
+	}
+}
+
+function checkServerFormHandler(hostname) {
+	try {
+		const forms = document.getElementsByTagName("form");
+
+		if (forms.length === 0) {
+			return -1; // Likely safe
+		}
+
+		for (let i = 0; i < forms.length; i++) {
+			const action = forms[i].getAttribute("action");
+
+			if (!action || action === "#" || action.toLowerCase() === "about:blank") {
+				return 1; // Could be phishing
+				continue;
+			}
+
+			try {
+				const actionUrl = new URL(action, document.baseURI);
+
+				if (actionUrl.hostname !== hostname && actionUrl.hostname !== "") {
+					return 0; // Could be suspicious
+				}
+			} catch (err) {
+				return 0; // Could be suspicious
+			}
+		}
+	} catch (err) {
+		console.log("Error while checking server form handler: ", err);
+        return 0; // Could be suspicious
 	}
 }
 
@@ -300,6 +332,10 @@ function extractFeaturesFromUrl(urlString) {
 
 		// Index 14: LinksInScript
 		features[14] = checkLinksInScript(hostname);
+
+        // Index 15: ServerFormHandler
+        features[15] = checkServerFormHandler(hostname);
+        
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
