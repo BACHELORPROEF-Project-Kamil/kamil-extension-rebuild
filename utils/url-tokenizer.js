@@ -1,20 +1,24 @@
 console.log("URL Tokenizer module loaded.");
 
-function extractFeaturesFromUrl(url) {
-    let features = new Array(31).fill(0);
-    
-    // TEST TRIGGER 1
-    if (url.includes("ai-phishing")) {
-        features[0] = 1;
-        features[1] = 1;
-        features[3] = 1;
-        features[7] = 1;
-    }
-    
-    // TEST TRIGGER 2
-    if (url.includes("ai-suspicious")) {
-        features[1] = 1;
-    }
-    
-    return features;
+// This function checks if the hostname (url) is an IP address or not.
+function checkIPAdress(hostname) {
+	const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+	return ipPattern.test(hostname) ? 1 : -1;
+}
+
+function extractFeaturesFromUrl(urlString) {
+	let features = new Array(31).fill(0);
+
+	try {
+		const urlObject = new URL(urlString);
+		const hostname = urlObject.hostname;
+
+		// Index 0: UsingIP
+		features[0] = checkIPAdress(hostname);
+
+	} catch (err) {
+		console.log("Error while tokenizing URL: ", err);
+	}
+
+	return features;
 }
