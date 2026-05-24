@@ -645,6 +645,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 29: StatisticalReport
         features[29] = checkStatisticalReport();
+
+        // Index 30: Class (placeholder for actual classification logic)
+        features[30] = checkClass(urlString);
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
