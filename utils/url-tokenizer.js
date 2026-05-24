@@ -57,6 +57,12 @@ function checkHTTPS(url) {
     return url.startsWith("https://") ? 1 : -1;
 }
 
+// This function checks the registration length of the domain (how long ago it was registered).
+function checkDomainRegistrationLength(hostname) {
+    // Placeholder as this is difficult to implement in Belgium bacause of the strict privacy laws.
+    return 0;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -87,6 +93,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 7: HTTPS
         features[7] = checkHTTPS(urlString);
+
+        // Index 8: DomainRegistrationLength
+        features[8] = checkDomainRegistrationLength(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
