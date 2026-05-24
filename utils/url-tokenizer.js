@@ -1,3 +1,5 @@
+const { all } = require("@tensorflow/tfjs");
+
 console.log("URL Tokenizer module loaded.");
 
 // This function checks if the hostname (url) is an IP address or not.
@@ -25,87 +27,170 @@ function checkShorteningService(hostname) {
 
 // This function checks if the URL contains an "@" symbol.
 function checkAtSymbol(url) {
-    return url.includes("@") ? 1 : -1;
+	return url.includes("@") ? 1 : -1;
 }
 
 // This function checks if the URL contains common redirecting patterns.
 function checkRedirecting(hostname) {
-    const redirectingPatterns = ["/@", "//", "/redirect?", "/redir?", "/redirect/", "/redir/"];
-    return redirectingPatterns.includes(hostname) ? 1 : -1;
+	const redirectingPatterns = ["/@", "//", "/redirect?", "/redir?", "/redirect/", "/redir/"];
+	return redirectingPatterns.includes(hostname) ? 1 : -1;
 }
 
 // This function checks if the hostname contains suspicious pre-suffixe.
 function checkPreSuffix(hostname) {
-    const preSuffixPattern = /[-.]/;
-    return preSuffixPattern.test(hostname) ? 1 : -1;
+	const preSuffixPattern = /[-.]/;
+	return preSuffixPattern.test(hostname) ? 1 : -1;
 }
 
 // This function counts the number of subdomains in the hostname.
 function checkSubdomainCount(hostname) {
-    const subdomainCount = hostname.split(".").length - 1;
-    if (subdomainCount === 0) {
-        return -1; // Likely safe
-    } else if (subdomainCount === 1) {
-        return 0; // Could be suspicious
-    } else {
-        return 1; // Could be phishing
-    }
+	const subdomainCount = hostname.split(".").length - 1;
+	if (subdomainCount === 0) {
+		return -1; // Likely safe
+	} else if (subdomainCount === 1) {
+		return 0; // Could be suspicious
+	} else {
+		return 1; // Could be phishing
+	}
 }
 
 // This function checks if the URL uses HTTPS.
 function checkHTTPS(url) {
-    return url.startsWith("https://") ? 1 : -1;
+	return url.startsWith("https://") ? 1 : -1;
 }
 
 // This function checks the registration length of the domain (how long ago it was registered).
 function checkDomainRegistrationLength(hostname) {
-    // Placeholder as this is difficult to implement in Belgium bacause of the strict privacy laws.
-    return 0;
+	// Placeholder as this is difficult to implement in Belgium bacause of the strict privacy laws.
+	return 0;
 }
 
 // This function checks if the favicon of the page matches the hostname.
 function checkFavicon(hostname) {
-    const faviconNode = document.querySelector("link[rel~='icon']");
+	const faviconNode = document.querySelector("link[rel~='icon']");
 
-    if (!faviconNode) {
-        return 0; // Could be suspicious
-    }
+	if (!faviconNode) {
+		return 0; // Could be suspicious
+	}
 
-    const faviconUrl = new URL(faviconNode.href);
+	const faviconUrl = new URL(faviconNode.href);
 
-    if (faviconUrl.hostname === hostname) {
-        return -1; // Likely safe
-    } else {
-        return 1; // Could be phishing
-    }
+	if (faviconUrl.hostname === hostname) {
+		return -1; // Likely safe
+	} else {
+		return 1; // Could be phishing
+	}
 }
 
 // This function checks if the URL is using a non-standard port.
 function checkNonStandardPort(urlObject) {
-    const port = urlObject.port;
+	const port = urlObject.port;
 
-    if (port === "" || port === "80" || port === "443") {
-        return -1; // Likely safe
-    } else {
-        return 1; // Could be suspicious
-    }
+	if (port === "" || port === "80" || port === "443") {
+		return -1; // Likely safe
+	} else {
+		return 1; // Could be suspicious
+	}
 }
 
 // This function checks if the hostname contains "https".
 function checkHTTPSDomainURL(hostname) {
-    const lowerCaseHostname = hostname.toLowerCase();
+	const lowerCaseHostname = hostname.toLowerCase();
 
-    if (lowerCaseHostname.includes("https")) {
-        return 1; // Could be phishing
-    } else {
-        return -1; // Likely safe
-    }
+	if (lowerCaseHostname.includes("https")) {
+		return 1; // Could be phishing
+	} else {
+		return -1; // Likely safe
+	}
 }
 
-// This function checks if the URL is valid
-function checkRequestURL(url) {
-    const requestUrlPattern = /https?:\/\/[^\s]+/;
-    return requestUrlPattern.test(url) ? 1 : -1;
+// This function checks the percentage of external resources.
+function checkRequestURL(hostname) {
+	try {
+		const images = document.getElementsByTagName("img");
+		const videos = document.getElementsByTagName("video");
+		const audios = document.getElementsByTagName("audio");
+		const scripts = document.getElementsByTagName("script");
+		const links = document.getElementsByTagName("link");
+
+		const allResources = [...images, ...videos, ...audios, ...scripts, ...links];
+
+		if (allResources.length === 0) {
+			return -1; // Likely safe
+		}
+
+		let externalResourceCount = 0;
+
+		allResources.forEach((resource) => {
+			const src = resource.src || resource.href;
+
+			if (src) {
+				try {
+					const resourceUrl = new URL(src);
+					if (resourceUrl.hostname !== hostname && resourceUrl.hostname !== "") {
+						externalResourceCount++;
+					}
+				} catch (err) {
+					// Skip invalid URLs
+				}
+			}
+		});
+
+		const externalResourcePercentage = (externalResourceCount / allResources.length) * 100;
+
+		if (externalResourcePercentage < 25) {
+			return -1; // Likely safe
+		} else if (externalResourcePercentage >= 25 && externalResourcePercentage <= 75) {
+			return 0; // Could be suspicious
+		} else {
+			return 1; // Could be phishing
+		}
+	} catch (err) {
+		console.log("Error while checking request URL: ", err);
+		return 0;
+	}
+}
+
+// This function checks the percentage of unsafe anchors.
+function checkAnchorURL(hostname) {
+    try {
+        const anchors = document.getElementsByTagName("a");
+
+        if (anchors.length === 0) {
+            return -1; // Likely safe
+        }
+
+        let unsafeAnchorCount = 0;
+
+        for (let i = 0; i < anchors.length; i++) {
+            const href = anchors[i].getAttribute("href");
+
+            if (!href || href === "#" || href.toLowerCase().startsWith("javascript:void(0)")) {
+                unsafeAnchorCount++;
+                continue;
+            }
+
+            try {
+                const anchorUrl = new URL(href, document.baseURI);
+
+                if (anchorUrl.hostname !== hostname && anchorUrl.hostname !== "") {
+                    unsafeAnchorCount++;
+                }
+            } catch (err) {
+                unsafeAnchorCount++;
+            }
+        }
+
+        const unsafeAnchorPercentage = (unsafeAnchorCount / anchors.length) * 100;
+
+        if (unsafeAnchorPercentage < 25) {
+            return -1; // Likely safe
+        } else if (unsafeAnchorPercentage >= 25 && unsafeAnchorPercentage <= 75) {
+            return 0; // Could be suspicious
+        } else {
+            return 1; // Could be phishing
+        }
+    }
 }
 
 function extractFeaturesFromUrl(urlString) {
@@ -124,35 +209,39 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 2: ShortURL
 		features[2] = checkShorteningService(hostname);
 
-        // Index 3: Symbol@
-        features[3] = checkAtSymbol(urlString);
+		// Index 3: Symbol@
+		features[3] = checkAtSymbol(urlString);
 
-        // Index 4: Redirecting//
-        features[4] = checkRedirecting(hostname);
+		// Index 4: Redirecting//
+		features[4] = checkRedirecting(hostname);
 
-        // Index 5: PrefixSuffix-
-        features[5] = checkPreSuffix(hostname);
+		// Index 5: PrefixSuffix-
+		features[5] = checkPreSuffix(hostname);
 
-        // Index 6: Subdomains
-        features[6] = checkSubdomainCount(hostname);
+		// Index 6: Subdomains
+		features[6] = checkSubdomainCount(hostname);
 
-        // Index 7: HTTPS
-        features[7] = checkHTTPS(urlString);
+		// Index 7: HTTPS
+		features[7] = checkHTTPS(urlString);
 
-        // Index 8: DomainRegistrationLength
-        features[8] = checkDomainRegistrationLength(hostname);
+		// Index 8: DomainRegistrationLength
+		features[8] = checkDomainRegistrationLength(hostname);
 
-        // Index 9: Favicon
-        features[9] = checkFavicon(hostname);
+		// Index 9: Favicon
+		features[9] = checkFavicon(hostname);
 
-        // Index 10: NonStandardPort
-        features[10] = checkNonStandardPort(urlObject);
+		// Index 10: NonStandardPort
+		features[10] = checkNonStandardPort(urlObject);
 
-        // Index 11: HTTPSDomainURL
-        features[11] = checkHTTPSDomainURL(hostname);
+		// Index 11: HTTPSDomainURL
+		features[11] = checkHTTPSDomainURL(hostname);
 
         // Index 12: RequestURL
-        features[12] = checkRequestURL(urlString);
+        features[12] = checkRequestURL(hostname);
+
+        // Index 13: AnchorURL
+        features[13] = checkAnchorURL(hostname);
+        
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
