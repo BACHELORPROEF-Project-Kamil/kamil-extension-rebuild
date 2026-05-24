@@ -375,6 +375,7 @@ function checkWebsiteForwarding() {
 	}
 }
 
+// This function checks if the page contains scripts that attempt to manipulate the status bar.
 function checkStatusBarCustomization() {
 	try {
 		const anchors = document.getElementsByTagName("a");
@@ -400,6 +401,26 @@ function checkStatusBarCustomization() {
 		return -1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking status bar customization: ", err);
+		return 0; // Could be suspicious
+	}
+}
+
+// This function checks if right-click is disabled on the page.
+function checkDisabledRightClick() {
+	try {
+		const bodyContextMenu = document.body.getAttribute("oncontextmenu");
+		const docContextMenu = document.documentElement.getAttribute("oncontextmenu");
+
+		if (
+			(bodyContextMenu && bodyContextMenu.toLowerCase().includes("return false")) ||
+			(docContextMenu && docContextMenu.toLowerCase().includes("return false"))
+		) {
+			return 1; // Could be phishing
+		}
+
+		return -1; // Likely safe
+	} catch (err) {
+		console.log("Error while checking disabled right-click: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -468,8 +489,11 @@ function extractFeaturesFromUrl(urlString) {
 		// Index 18: WebsiteForwarding
 		features[18] = checkWebsiteForwarding();
 
-        // Index 19: StatusBarCustomization
-        features[19] = checkStatusBarCustomization();
+		// Index 19: StatusBarCustomization
+		features[19] = checkStatusBarCustomization();
+
+		// Index 20: DisabledRightClick
+		features[20] = checkDisabledRightClick();
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
