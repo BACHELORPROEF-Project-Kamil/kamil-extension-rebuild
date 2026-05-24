@@ -102,6 +102,12 @@ function checkHTTPSDomainURL(hostname) {
     }
 }
 
+// This function checks if the URL is valid
+function checkRequestURL(url) {
+    const requestUrlPattern = /https?:\/\/[^\s]+/;
+    return requestUrlPattern.test(url) ? 1 : -1;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -145,6 +151,8 @@ function extractFeaturesFromUrl(urlString) {
         // Index 11: HTTPSDomainURL
         features[11] = checkHTTPSDomainURL(hostname);
 
+        // Index 12: RequestURL
+        features[12] = checkRequestURL(urlString);
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
