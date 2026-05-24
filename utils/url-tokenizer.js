@@ -34,6 +34,12 @@ function checkRedirecting(hostname) {
     return redirectingPatterns.includes(hostname) ? 1 : -1;
 }
 
+// This function checks if the hostname contains suspicious pre-suffixe.
+function checkPreSuffix(hostname) {
+    const preSuffixPattern = /[-.]/;
+    return preSuffixPattern.test(hostname) ? 1 : -1;
+}
+
 function extractFeaturesFromUrl(urlString) {
 	let features = new Array(31).fill(0);
 
@@ -55,6 +61,9 @@ function extractFeaturesFromUrl(urlString) {
 
         // Index 4: Redirecting//
         features[4] = checkRedirecting(hostname);
+
+        // Index 5: PrefixSuffix-
+        features[5] = checkPreSuffix(hostname);
 
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
