@@ -1,56 +1,54 @@
-const { all } = require("@tensorflow/tfjs");
-
 console.log("URL Tokenizer module loaded.");
 
 // This function checks if the hostname (url) is an IP address or not.
 function checkIPAdress(hostname) {
 	const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-	return ipPattern.test(hostname) ? 1 : -1;
+	return ipPattern.test(hostname) ? -1 : 1; // IP is phishing (-1), domain is safe (1)
 }
 
 // This function checks the length of the URL and categorizes it.
 function checkURLLength(url) {
 	if (url.length < 54) {
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} else if (url.length >= 54 && url.length <= 75) {
 		return 0; // Could be suspicious
 	} else {
-		return 1; // Could be phishing
+		return -1; // Could be phishing
 	}
 }
 
 // This function checks if the hostname belongs to a known URL shortening service.
 function checkShorteningService(hostname) {
 	const shorteners = ["bit.ly", "goo.gl", "tinyurl.com", "ow.ly", "t.co", "is.gd", "buff.ly", "adf.ly", "bit.do", "cutt.ly"];
-	return shorteners.includes(hostname) ? 1 : -1;
+	return shorteners.includes(hostname) ? -1 : 1;
 }
 
 // This function checks if the URL contains an "@" symbol.
 function checkAtSymbol(url) {
-	return url.includes("@") ? 1 : -1;
+	return url.includes("@") ? -1 : 1;
 }
 
 // This function checks if the URL contains common redirecting patterns.
 function checkRedirecting(hostname) {
 	const redirectingPatterns = ["/@", "//", "/redirect?", "/redir?", "/redirect/", "/redir/"];
-	return redirectingPatterns.includes(hostname) ? 1 : -1;
+	return redirectingPatterns.includes(hostname) ? -1 : 1;
 }
 
 // This function checks if the hostname contains suspicious pre-suffixe.
 function checkPreSuffix(hostname) {
 	const preSuffixPattern = /[-.]/;
-	return preSuffixPattern.test(hostname) ? 1 : -1;
+	return preSuffixPattern.test(hostname) ? -1 : 1;
 }
 
 // This function counts the number of subdomains in the hostname.
 function checkSubdomainCount(hostname) {
 	const subdomainCount = hostname.split(".").length - 1;
 	if (subdomainCount === 0) {
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} else if (subdomainCount === 1) {
 		return 0; // Could be suspicious
 	} else {
-		return 1; // Could be phishing
+		return -1; // Could be phishing
 	}
 }
 
@@ -59,26 +57,21 @@ function checkHTTPS(url) {
 	return url.startsWith("https://") ? 1 : -1;
 }
 
-// This function checks the registration length of the domain (how long ago it was registered).
-function checkDomainRegistrationLength(hostname) {
-	// Placeholder as this is difficult to implement in Belgium bacause of the strict privacy laws.
-	return 0;
-}
-
 // This function checks if the favicon of the page matches the hostname.
 function checkFavicon(hostname) {
+	if (typeof document === "undefined") return 0;
 	const faviconNode = document.querySelector("link[rel~='icon']");
 
-	if (!faviconNode) {
+	if (!faviconNode || !faviconNode.href) {
 		return 0; // Could be suspicious
 	}
 
-	const faviconUrl = new URL(faviconNode.href);
+	const faviconUrl = new URL(faviconNode.href, document.baseURI);
 
-	if (faviconUrl.hostname === hostname) {
-		return -1; // Likely safe
+	if (faviconUrl.hostname === hostname || faviconUrl.hostname === "") {
+		return 1; // Likely safe
 	} else {
-		return 1; // Could be phishing
+		return -1; // Could be phishing
 	}
 }
 
@@ -87,9 +80,9 @@ function checkNonStandardPort(urlObject) {
 	const port = urlObject.port;
 
 	if (port === "" || port === "80" || port === "443") {
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} else {
-		return 1; // Could be suspicious
+		return -1; // Could be suspicious
 	}
 }
 
@@ -98,14 +91,15 @@ function checkHTTPSDomainURL(hostname) {
 	const lowerCaseHostname = hostname.toLowerCase();
 
 	if (lowerCaseHostname.includes("https")) {
-		return 1; // Could be phishing
+		return -1; // Could be phishing
 	} else {
-		return -1; // Likely safe
+		return 1; // Likely safe
 	}
 }
 
 // This function checks the percentage of external resources.
 function checkRequestURL(hostname) {
+	if (typeof document === "undefined") return 0;
 	try {
 		const images = document.getElementsByTagName("img");
 		const videos = document.getElementsByTagName("video");
@@ -116,7 +110,7 @@ function checkRequestURL(hostname) {
 		const allResources = [...images, ...videos, ...audios, ...scripts, ...links];
 
 		if (allResources.length === 0) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		}
 
 		let externalResourceCount = 0;
@@ -139,11 +133,11 @@ function checkRequestURL(hostname) {
 		const externalResourcePercentage = (externalResourceCount / allResources.length) * 100;
 
 		if (externalResourcePercentage < 25) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		} else if (externalResourcePercentage >= 25 && externalResourcePercentage <= 75) {
 			return 0; // Could be suspicious
 		} else {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 	} catch (err) {
 		console.log("Error while checking request URL: ", err);
@@ -153,11 +147,12 @@ function checkRequestURL(hostname) {
 
 // This function checks the percentage of unsafe anchors.
 function checkAnchorURL(hostname) {
+	if (typeof document === "undefined") return 0;
 	try {
 		const anchors = document.getElementsByTagName("a");
 
 		if (anchors.length === 0) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		}
 
 		let unsafeAnchorCount = 0;
@@ -184,11 +179,11 @@ function checkAnchorURL(hostname) {
 		const unsafeAnchorPercentage = (unsafeAnchorCount / anchors.length) * 100;
 
 		if (unsafeAnchorPercentage < 25) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		} else if (unsafeAnchorPercentage >= 25 && unsafeAnchorPercentage <= 75) {
 			return 0; // Could be suspicious
 		} else {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 	} catch (err) {
 		console.log("Error while checking anchor URL: ", err);
@@ -198,6 +193,7 @@ function checkAnchorURL(hostname) {
 
 // This function checks the percentage of external links in scripts, stylesheets and meta tags.
 function checkLinksInScript(hostname) {
+	if (typeof document === "undefined") return 0;
 	try {
 		const scripts = document.getElementsByTagName("script");
 		const links = document.getElementsByTagName("link");
@@ -206,7 +202,7 @@ function checkLinksInScript(hostname) {
 		const allElements = [...scripts, ...links, ...metas];
 
 		if (allElements.length === 0) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		}
 
 		let externalLinkCount = 0;
@@ -237,11 +233,11 @@ function checkLinksInScript(hostname) {
 		const externalLinkPercentage = (externalLinkCount / allElements.length) * 100;
 
 		if (externalLinkPercentage < 25) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		} else if (externalLinkPercentage >= 25 && externalLinkPercentage <= 75) {
 			return 0; // Could be suspicious
 		} else {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 	} catch (err) {
 		console.log("Error while checking links in script: ", err);
@@ -251,19 +247,19 @@ function checkLinksInScript(hostname) {
 
 // This function checks if the page contains forms that submit to external servers or have no action.
 function checkServerFormHandler(hostname) {
+	if (typeof document === "undefined") return 0;
 	try {
 		const forms = document.getElementsByTagName("form");
 
 		if (forms.length === 0) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		}
 
 		for (let i = 0; i < forms.length; i++) {
 			const action = forms[i].getAttribute("action");
 
 			if (!action || action === "#" || action.toLowerCase() === "about:blank") {
-				return 1; // Could be phishing
-				continue;
+				return -1; // Could be phishing
 			}
 
 			try {
@@ -276,6 +272,7 @@ function checkServerFormHandler(hostname) {
 				return 0; // Could be suspicious
 			}
 		}
+        return 1; // Safe
 	} catch (err) {
 		console.log("Error while checking server form handler: ", err);
 		return 0; // Could be suspicious
@@ -284,13 +281,14 @@ function checkServerFormHandler(hostname) {
 
 // This function checks if the page contains email forms that could be used to steal information.
 function checkInfoEmail() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const forms = document.getElementsByTagName("form");
 
 		for (let i = 0; i < forms.length; i++) {
 			const action = forms[i].getAttribute("action");
 			if (action && action.toLowerCase().startsWith("mailto:")) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 
@@ -299,11 +297,11 @@ function checkInfoEmail() {
 		for (let i = 0; i < anchors.length; i++) {
 			const href = anchors[i].getAttribute("href");
 			if (href && href.toLowerCase().startsWith("mailto:")) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking info email: ", err);
 		return 0; // Could be suspicious
@@ -312,10 +310,11 @@ function checkInfoEmail() {
 
 // This function checks if the URL is abnormal by looking for suspicious patterns in the hostname and page title.
 function checkAbnormalURL(hostname, urlString) {
+	if (typeof document === "undefined") return 0;
 	try {
 		const protocolMatches = urlString.match(/^(https?):\/\//i);
 		if (protocolMatches && protocolMatches.length > 1) {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 
 		const pageTitle = document.title ? document.title.toLowerCase() : "";
@@ -342,10 +341,10 @@ function checkAbnormalURL(hostname, urlString) {
 
 		for (let target of commonTargets) {
 			if (pageTitle.includes(target) && !hostname.toLowerCase().includes(target)) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking abnormal URL: ", err);
 		return 0; // Could be suspicious
@@ -354,6 +353,7 @@ function checkAbnormalURL(hostname, urlString) {
 
 // This function checks the number of redirects that occurred during page load.
 function checkWebsiteForwarding() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const navigationEntries = performance.getEntriesByType("navigation");
 
@@ -361,11 +361,11 @@ function checkWebsiteForwarding() {
 			const redirectCount = navigationEntries[0].redirectCount;
 
 			if (redirectCount <= 1) {
-				return -1; // Likely safe
+				return 1; // Likely safe
 			} else if (redirectCount > 1 && redirectCount < 4) {
 				return 0; // Could be suspicious
 			} else {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 		return 0; // Could be suspicious
@@ -377,6 +377,7 @@ function checkWebsiteForwarding() {
 
 // This function checks if the page contains scripts that attempt to manipulate the status bar.
 function checkStatusBarCustomization() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const anchors = document.getElementsByTagName("a");
 
@@ -388,17 +389,17 @@ function checkStatusBarCustomization() {
 				onMouseOver &&
 				(onMouseOver.toLowerCase().includes("window.status") || onMouseOver.toLowerCase().includes("status="))
 			) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 			if (
 				onMouseMove &&
 				(onMouseMove.toLowerCase().includes("window.status") || onMouseMove.toLowerCase().includes("status="))
 			) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking status bar customization: ", err);
 		return 0; // Could be suspicious
@@ -407,6 +408,7 @@ function checkStatusBarCustomization() {
 
 // This function checks if right-click is disabled on the page.
 function checkDisabledRightClick() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const bodyContextMenu = document.body.getAttribute("oncontextmenu");
 		const docContextMenu = document.documentElement.getAttribute("oncontextmenu");
@@ -415,10 +417,10 @@ function checkDisabledRightClick() {
 			(bodyContextMenu && bodyContextMenu.toLowerCase().includes("return false")) ||
 			(docContextMenu && docContextMenu.toLowerCase().includes("return false"))
 		) {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking disabled right-click: ", err);
 		return 0; // Could be suspicious
@@ -427,11 +429,12 @@ function checkDisabledRightClick() {
 
 // This function checks if the page uses pop-up windows.
 function checkUsingPopUpWindow() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const bodyHTML = document.body ? document.body.innerHTML.toLocaleLowerCase() : "";
 
 		if (bodyHTML.includes("window.open(") || bodyHTML.includes("window.window.open ")) {
-			return 1; // Could be phishing
+			return -1; // Could be phishing
 		}
 
 		const anchors = document.getElementsByTagName("a");
@@ -440,11 +443,11 @@ function checkUsingPopUpWindow() {
 			const onClick = anchors[i].getAttribute("onclick");
 
 			if (onClick && onClick.toLowerCase().includes("window.open")) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 
-		return -1; // Likely safe
+		return 1; // Likely safe
 	} catch (err) {
 		console.log("Error while checking using pop-up window: ", err);
 		return 0; // Could be suspicious
@@ -453,11 +456,12 @@ function checkUsingPopUpWindow() {
 
 // This function checks if the page contains hidden iframes that could be used for redirection.
 function checkIFrameRedirection() {
+	if (typeof document === "undefined") return 0;
 	try {
 		const iframes = document.getElementsByTagName("iframe");
 
 		if (iframes.length === 0) {
-			return -1; // Likely safe
+			return 1; // Likely safe
 		}
 
 		for (let i = 0; i < iframes.length; i++) {
@@ -469,11 +473,11 @@ function checkIFrameRedirection() {
 			const height = iframe.getAttribute("height");
 
 			if (frameborder === "0") {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 
 			if (style.includes("visibility:hidden") || style.includes("display:none") || style.includes("opacity:0")) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 
 			if (
@@ -484,7 +488,7 @@ function checkIFrameRedirection() {
 				style.includes("width:0") ||
 				style.includes("height:0")
 			) {
-				return 1; // Could be phishing
+				return -1; // Could be phishing
 			}
 		}
 
@@ -495,159 +499,124 @@ function checkIFrameRedirection() {
 	}
 }
 
-// This function checks the age of the domain.
-function checkAgeOfDomain() {
-    // SOON TO BE IMPLEMENTED
+function checkWebsiteTraffic() { return 1; }
+function checkPageRank() { return 1; }
+function checkGoogleIndex() { return 1; }
+function checkLinksPointingToPage() { return 1; }
+function checkStatisticalReport() { return 1; }
 
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks the DNS recording of the domain.
-function checkDNSRecording() {
-    // SOON TO BE IMPLEMENTED
-
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks the website traffic of the domain.
-function checkWebsiteTraffic() {
-    // SOON TO BE IMPLEMENTED
-    
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks the PageRank of the domain.
-function checkPageRank() {
-    // SOON TO BE IMPLEMENTED
-    
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks if the domain is indexed by Google.
-function checkGoogleIndex() {
-    // SOON TO BE IMPLEMENTED
-    
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks the number of links pointing to the page.
-function checkLinksPointingToPage() {
-    // SOON TO BE IMPLEMENTED
-    
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function checks the statistical report of the domain from a threat intelligence service.
-function checkStatisticalReport() {
-    // SOON TO BE IMPLEMENTED
-    
-    return 0; // Could be suspicious (temporary return value until implemented)
-}
-
-// This function is a placeholder for the actual classification logic.
-function checkClass(urlString) {
-    return 0;
-}
-
-function extractFeaturesFromUrl(urlString) {
+async function extractFeaturesFromUrl(urlString, domResults = null) {
 	let features = new Array(31).fill(0);
 
 	try {
 		const urlObject = new URL(urlString);
 		const hostname = urlObject.hostname;
 
-		// Index 0: UsingIP
-		features[0] = checkIPAdress(hostname);
+		// The model has been trained with an index column that we don't actually need, so we give it a dummy value.
+		features[0] = 1; // Dummy value for Index
 
-		// Index 1: LongURL
-		features[1] = checkURLLength(urlString);
+		// Index 1: UsingIP
+		features[1] = checkIPAdress(hostname);
 
-		// Index 2: ShortURL
-		features[2] = checkShorteningService(hostname);
+		// Index 2: LongURL
+		features[2] = checkURLLength(urlString);
 
-		// Index 3: Symbol@
-		features[3] = checkAtSymbol(urlString);
+		// Index 3: ShortURL
+		features[3] = checkShorteningService(hostname);
 
-		// Index 4: Redirecting//
-		features[4] = checkRedirecting(hostname);
+		// Index 4: Symbol@
+		features[4] = checkAtSymbol(urlString);
 
-		// Index 5: PrefixSuffix-
-		features[5] = checkPreSuffix(hostname);
+		// Index 5: Redirecting//
+		features[5] = checkRedirecting(hostname);
 
-		// Index 6: Subdomains
-		features[6] = checkSubdomainCount(hostname);
+		// Index 6: PrefixSuffix-
+		features[6] = checkPreSuffix(hostname);
 
-		// Index 7: HTTPS
-		features[7] = checkHTTPS(urlString);
+		// Index 7: SubDomains
+		features[7] = checkSubdomainCount(hostname);
 
-		// Index 8: DomainRegistrationLength
-		features[8] = checkDomainRegistrationLength(hostname);
+		// Index 8: HTTPS
+		features[8] = checkHTTPS(urlString);
 
-		// Index 9: Favicon
-		features[9] = checkFavicon(hostname);
+		// Index 10: Favicon
+		features[10] = domResults ? domResults[10] : checkFavicon(hostname);
 
-		// Index 10: NonStandardPort
-		features[10] = checkNonStandardPort(urlObject);
+		// Index 11: NonStandardPort
+		features[11] = checkNonStandardPort(urlObject);
 
-		// Index 11: HTTPSDomainURL
-		features[11] = checkHTTPSDomainURL(hostname);
+		// Index 12: HTTPSDomainURL
+		features[12] = checkHTTPSDomainURL(hostname);
 
-		// Index 12: RequestURL
-		features[12] = checkRequestURL(hostname);
+		// Index 13: RequestURL
+		features[13] = domResults ? domResults[13] : checkRequestURL(hostname);
 
-		// Index 13: AnchorURL
-		features[13] = checkAnchorURL(hostname);
+		// Index 14: AnchorURL
+		features[14] = domResults ? domResults[14] : checkAnchorURL(hostname);
 
-		// Index 14: LinksInScript
-		features[14] = checkLinksInScript(hostname);
+		// Index 15: LinksInScript
+		features[15] = domResults ? domResults[15] : checkLinksInScript(hostname);
 
-		// Index 15: ServerFormHandler
-		features[15] = checkServerFormHandler(hostname);
+		// Index 16: ServerFormHandler
+		features[16] = domResults ? domResults[16] : checkServerFormHandler(hostname);
 
-		// Index 16: InfoEmail
-		features[16] = checkInfoEmail();
+		// Index 17: InfoEmail
+		features[17] = domResults ? domResults[17] : checkInfoEmail();
 
-		// Index 17: AbnormalURL
-		features[17] = checkAbnormalURL(hostname, urlString);
+		// Index 18: AbnormalURL
+		features[18] = domResults ? domResults[18] : checkAbnormalURL(hostname, urlString);
 
-		// Index 18: WebsiteForwarding
-		features[18] = checkWebsiteForwarding();
+		// Index 19: WebsiteForwarding
+		features[19] = domResults ? domResults[19] : checkWebsiteForwarding();
 
-		// Index 19: StatusBarCustomization
-		features[19] = checkStatusBarCustomization();
+		// Index 20: StatusBarCustomization
+		features[20] = domResults ? domResults[20] : checkStatusBarCustomization();
 
-		// Index 20: DisabledRightClick
-		features[20] = checkDisabledRightClick();
+		// Index 21: DisabledRightClick
+		features[21] = domResults ? domResults[21] : checkDisabledRightClick();
 
-		// Index 21: UsingPopUpWindow
-		features[21] = checkUsingPopUpWindow();
+		// Index 22: UsingPopUpWindow
+		features[22] = domResults ? domResults[22] : checkUsingPopUpWindow();
 
-		// Index 22: IFrameRedirection
-		features[22] = checkIFrameRedirection();
+		// Index 23: IFrameRedirection
+		features[23] = domResults ? domResults[23] : checkIFrameRedirection();
 
-		// Index 23: AgeOfDomain
-		features[23] = checkAgeOfDomain();
+		// Static/Unavailable features
+		features[26] = checkWebsiteTraffic();
+		features[27] = checkPageRank();
+		features[28] = checkGoogleIndex();
+		features[29] = checkLinksPointingToPage();
+		features[30] = checkStatisticalReport();
 
-        // Index 24: DNSRecording
-        features[24] = checkDNSRecording();
+		console.log("Local checks done, beginning extraction of server vitals via backend");
 
-        // Index 25: WebsiteTraffic
-        features[25] = checkWebsiteTraffic();
+		const response = await fetch("http://localhost:5001/api/check-url", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ url: urlString }),
+		});
 
-        // Index 26: PageRank
-        features[26] = checkPageRank();
+        if (response.ok) {
+            const data = await response.json();
 
-        // Index 27: GoogleIndex
-        features[27] = checkGoogleIndex();
+			// Backend features
 
-        // Index 28: LinksPointingToPage
-        features[28] = checkLinksPointingToPage();
+            // Index 9: DomainRegLen
+            features[9] = data.features.domainRegistrationLength;
 
-        // Index 29: StatisticalReport
-        features[29] = checkStatisticalReport();
+            // Index 24: AgeofDomain
+            features[24] = data.features.ageOfDomain;
 
-        // Index 30: Class (placeholder for actual classification logic)
-        features[30] = checkClass(urlString);
+            // Index 25: DNSRecording
+            features[25] = data.features.dnsRecord;
+
+            console.log("Server vitals extracted and features array updated");
+        } else {
+            console.log("Failed to fetch server vitals, keeping default values for those features");
+        }
+
 	} catch (err) {
 		console.log("Error while tokenizing URL: ", err);
 	}
