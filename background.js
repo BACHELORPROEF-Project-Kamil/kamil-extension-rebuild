@@ -55,33 +55,79 @@ async function initExtension() {
 
 initExtension();
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 	if (changeInfo.status === "complete" && tab.url?.startsWith("http")) {
 		console.log(`Tab updated: ${tab.url}`);
 
 		if (useLocalAI && model) {
 			console.log("Processing URL with local AI");
 
-			const featureArray = extractFeaturesFromUrl(tab.url);
-			const inputTensor = tf.tensor2d([featureArray], [1, 31]);
-			const prediction = model.predict(inputTensor);
-			const scoreData = prediction.dataSync();
-			const phishingScore = scoreData[0];
+			try {
+				let domResults = null;
 
-			inputTensor.dispose();
-			prediction.dispose();
+				try {
+					// Inject tokenizer into the tab to perform on-page checks
+					await chrome.scripting.executeScript({
+						target: { tabId: tabId },
+						files: ["utils/url-tokenizer.js"],
+					});
 
-			console.log(`AI verdict for ${tab.url}: ${phishingScore.toFixed(4)}`);
+					// Execute the extraction logic in the tab context
+					const scriptResult = await chrome.scripting.executeScript({
+						target: { tabId: tabId },
+						func: (urlString) => {
+							const urlObject = new URL(urlString);
+							const hostname = urlObject.hostname;
 
-			if (phishingScore > 0.8) {
-				console.warn(`LOCAL AI ALERT: PHISHING DETECTED`);
-				// ADD CODE TO SHOW POPUP WITH CORRECT VERSION OF KAMIL
+							// Gather all features that require DOM access
+							return {
+								10: checkFavicon(hostname),
+								13: checkRequestURL(hostname),
+								14: checkAnchorURL(hostname),
+								15: checkLinksInScript(hostname),
+								16: checkServerFormHandler(hostname),
+								17: checkInfoEmail(),
+								18: checkAbnormalURL(hostname, urlString),
+								19: checkWebsiteForwarding(),
+								20: checkStatusBarCustomization(),
+								21: checkDisabledRightClick(),
+								22: checkUsingPopUpWindow(),
+								23: checkIFrameRedirection(),
+							};
+						},
+						args: [tab.url],
+					});
 
-				return;
-			}
+					if (scriptResult && scriptResult[0] && scriptResult[0].result) {
+						domResults = scriptResult[0].result;
+					}
+				} catch (scriptErr) {
+					console.warn("Could not extract DOM features. Falling back to URL-only features.", scriptErr.message);
+				}
 
-			if (phishingScore > 0.5) {
-				console.warn(`LOCAL AI IS SUSPICIOUS, MAKING SERVER-SIDED CHECK FOR SECOND OPINION`);
+				const featureArray = await extractFeaturesFromUrl(tab.url, domResults);
+				const inputTensor = tf.tensor2d([featureArray], [1, 31]);
+				const prediction = model.predict(inputTensor);
+				const scoreData = prediction.dataSync();
+				const phishingScore = scoreData[0];
+
+				inputTensor.dispose();
+				prediction.dispose();
+
+				console.log(`AI verdict for ${tab.url}: ${phishingScore.toFixed(4)}`);
+
+				if (phishingScore < 0.2) {
+					console.warn(`LOCAL AI ALERT: PHISHING DETECTED`);
+					// ADD CODE TO SHOW POPUP WITH CORRECT VERSION OF KAMIL
+
+					return;
+				}
+
+				if (phishingScore < 0.5) {
+					console.warn(`LOCAL AI IS SUSPICIOUS, MAKING SERVER-SIDED CHECK FOR SECOND OPINION`);
+				}
+			} catch (err) {
+				console.error("Error during local AI processing: ", err);
 			}
 		} else {
 			console.log("Local AI not available, sending URL to server for further analysis");
