@@ -6,8 +6,9 @@ importScripts(
 	"tf-core.min.js",
 	"tf-backend-cpu.min.js",
 	"tf-layers.min.js",
-	"utils/url-tokenizer.js",
+    "utils/whitelist.js",
 	"utils/punycode-checker.js",
+	"utils/url-tokenizer.js",
 );
 
 console.log("Background script running and modules imported");
@@ -81,7 +82,13 @@ async function checkUrl(tabId, url) {
 
 	console.log(`Starting security checks for: ${url}`);
 
-	// 1. Punycode check
+    // 1. Whitelist check
+    if (isWhitelisted(new URL(url).hostname)) {
+        console.log("URL is whitelisted, skipping checks.");
+        return;
+    }
+
+	// 2. Punycode check
 	if (typeof isPunycode === "function") {
 		const isPuny = isPunycode(url);
 		if (isPuny) {
@@ -90,9 +97,6 @@ async function checkUrl(tabId, url) {
 			return;
 		}
 	}
-
-	// 2. Additional checks
-	// TODO: IMPLEMENT OTHER CHECKS
 
 	// 3. (final) AI Model check
 	// We run the AI model check as the final step because it is the most resource intensive.
