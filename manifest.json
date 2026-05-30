@@ -3,7 +3,7 @@
 	"name": "Kamil",
 	"version": "1.0",
 	"description": "De digitale kameleon die jou beschermd tegen phishing.",
-	"permissions": ["tabs", "webNavigation", "scripting"],
+	"permissions": ["tabs", "webNavigation", "scripting", "alarms", "storage"],
 	"host_permissions": ["http://localhost:5001/*", "<all_urls>"],
 	"background": {
 		"service_worker": "background.js"

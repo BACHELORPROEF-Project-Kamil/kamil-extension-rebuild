@@ -21,6 +21,61 @@ let useLocalAI = false;
 // This object keeps track of the current scenario status for each tab.
 let currentTabStatus = {};
 
+// This function increments the local statistics for URLs checked and checks performed.
+async function incrementLocalStats(urlCount = 0, checkCount = 0) {
+	try {
+		const data = await chrome.storage.local.get(["urlsChecked", "checksPerformed"]);
+
+		const newUrlCount = (data.urlsChecked || 0) + urlCount;
+		const newCheckCount = (data.checksPerformed || 0) + checkCount;
+
+		await chrome.storage.local.set({
+			urlsChecked: newUrlCount,
+			checksPerformed: newCheckCount,
+		});
+
+		if (newUrlCount >= 50) {
+			await syncStatsWithServer(newUrlCount, newCheckCount);
+		}
+	} catch (err) {
+		console.error("Error updating local stats: ", err);
+	}
+}
+
+// This function sends the local statistics to the server and resets the local counts upon successful sync.
+async function syncStatsWithServer(urlCount, checkCount) {
+	try {
+		const data = await chrome.storage.local.get(["urlsChecked", "checksPerformed"]);
+		const urlsChecked = data.urlsChecked || 0;
+		const checksPerformed = data.checksPerformed || 0;
+
+		if (urlsChecked === 0) return;
+
+		console.log(`Syncing stats with server: ${urlsChecked} URLs checked, ${checksPerformed} checks performed`);
+
+		const response = await fetch("http://localhost:5001/api/stats/sync", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				urlsChecked,
+				checksPerformed,
+			}),
+		});
+
+		if (response.ok) {
+			console.log("Stats synced successfully, resetting local counts.");
+			await chrome.storage.local.set({
+				urlsChecked: 0,
+				checksPerformed: 0,
+			});
+		}
+	} catch (err) {
+		console.error("Error syncing stats with server: ", err);
+	}
+}
+
 // This function updates the badge and popup content based on the detected scenario for a given tab (phishing).
 function updateTabStatus(tabId, scenarioKey) {
 	const scenario = scenarios[scenarioKey] || scenarios.SAFE;
@@ -107,19 +162,32 @@ initExtension();
 
 // This listener starts when the browser starts up and initializes the benchmark.
 chrome.runtime.onStartup.addListener(() => {
-	console.log("Browser started, running benchmark...");
+	console.log("Browser started, running benchmark and syncing stats with server...");
+	syncStatsWithServer();
 	performBenchmark();
+});
+
+
+// This alarm runs every x minute(s) to sync the local stats with the server.
+chrome.alarms.create("syncStatsAlarm", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+	if (alarm.name === "syncStatsAlarm") {
+		syncStatsWithServer();
+	}
 });
 
 async function checkUrl(tabId, url) {
 	if (!url || !url.startsWith("http")) return;
 
-    // Before we begin any checks, we set the status to "SAFE" by default.
+    await incrementLocalStats(1, 0);
+
+	// Before we begin any checks, we set the status to "SAFE" by default.
 	updateTabStatus(tabId, "SAFE");
 
 	console.log(`Starting security checks for: ${url}`);
 
 	// 1. Blacklist check
+    await incrementLocalStats(0, 1);
 	if (isBlacklisted(url)) {
 		console.warn("URL is blacklisted, showing warning popup.");
 		updateTabStatus(tabId, "BLACKLISTED_URL");
@@ -127,12 +195,14 @@ async function checkUrl(tabId, url) {
 	}
 
 	// 2. Whitelist check
+    await incrementLocalStats(0, 1);
 	if (isWhitelisted(new URL(url).hostname)) {
 		console.log("URL is whitelisted, skipping checks.");
 		return;
 	}
 
 	// 3. Punycode check
+    await incrementLocalStats(0, 1);
 	if (typeof isPunycode === "function") {
 		const isPuny = isPunycode(url);
 		if (isPuny) {
@@ -198,6 +268,7 @@ async function runAIModelCheck(tabId, url) {
 		} catch (scriptErr) {
 			console.warn("Could not extract DOM features. Falling back to URL-only features.", scriptErr.message);
 		}
+        await incrementLocalStats(0, 1);
 
 		const featureArray = await extractFeaturesFromUrl(url, domResults);
 		const inputTensor = tf.tensor2d([featureArray], [1, 31]);
@@ -213,6 +284,7 @@ async function runAIModelCheck(tabId, url) {
 		if (phishingScore < 0.2) {
 			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");
 		} else if (phishingScore < 0.5) {
+			await incrementLocalStats(0, 1);
 			console.warn(`LOCAL AI IS SUSPICIOUS, MAKING SERVER-SIDED CHECK FOR SECOND OPINION`);
 		}
 	} catch (err) {
