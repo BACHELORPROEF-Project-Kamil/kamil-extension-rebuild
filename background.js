@@ -10,6 +10,7 @@ importScripts(
 	"utils/whitelist.js",
 	"utils/punycode-checker.js",
 	"utils/url-tokenizer.js",
+	"utils/scenarios.js",
 );
 
 console.log("Background script running and modules imported");
@@ -17,11 +18,43 @@ console.log("Background script running and modules imported");
 let model = null;
 let useLocalAI = false;
 
-// This function shows a warning popup when a phishing attempt is detected.
-function showPopup(url, reason) {
-	console.warn(`PHISHING DETECTED! Reason: ${reason}, URL: ${url}`);
-	// TODO: ADD CALLBACK TO OPEN THE POPUP WITH THE URL AND REASON
+// This object keeps track of the current scenario status for each tab.
+let currentTabStatus = {};
+
+// This function updates the badge and popup content based on the detected scenario for a given tab (phishing).
+function updateTabStatus(tabId, scenarioKey) {
+	const scenario = scenarios[scenarioKey] || scenarios.SAFE;
+	currentTabStatus[tabId] = scenarioKey;
+
+	let badgeColor = "#054431";
+	let badgeText = "";
+
+	if (scenario.status === "warning") {
+		badgeColor = "#ff9800";
+		badgeText = "!";
+	} else if (scenario.status === "critical") {
+		badgeColor = "#ff0000";
+		badgeText = "!";
+	}
+
+	chrome.action.setBadgeBackgroundColor({ color: badgeColor, tabId });
+	chrome.action.setBadgeText({ text: badgeText, tabId });
 }
+
+// This listener sends the current scenario status to the popup when it requests it.
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message.action === "getStatus") {
+		chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+			const activeTab = tabs[0];
+			const scenarioKey = currentTabStatus[activeTab?.id] || "SAFE";
+			sendResponse({
+				scenarioKey: scenarioKey,
+				data: scenarios[scenarioKey],
+			});
+		});
+		return true;
+	}
+});
 
 // This function runs a test benchmark to detemine if the local AI model can be used or not on the client's device.
 async function performBenchmark() {
@@ -81,12 +114,15 @@ chrome.runtime.onStartup.addListener(() => {
 async function checkUrl(tabId, url) {
 	if (!url || !url.startsWith("http")) return;
 
+    // Before we begin any checks, we set the status to "SAFE" by default.
+	updateTabStatus(tabId, "SAFE");
+
 	console.log(`Starting security checks for: ${url}`);
 
 	// 1. Blacklist check
 	if (isBlacklisted(url)) {
 		console.warn("URL is blacklisted, showing warning popup.");
-		showPopup(url, "BLACKLISTED_URL");
+		updateTabStatus(tabId, "BLACKLISTED_URL");
 		return;
 	}
 
@@ -101,7 +137,7 @@ async function checkUrl(tabId, url) {
 		const isPuny = isPunycode(url);
 		if (isPuny) {
 			console.log("Punycode detected, stopping further checks.");
-			showPopup(url, "PUNYCODE_ATTEMPT");
+			updateTabStatus(tabId, "PUNYCODE");
 			return;
 		}
 	}
@@ -175,7 +211,7 @@ async function runAIModelCheck(tabId, url) {
 		console.log(`AI verdict for ${url}: ${phishingScore.toFixed(4)}`);
 
 		if (phishingScore < 0.2) {
-			showPopup(url, "AI_PREDICTION_HIGH_RISK");
+			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");
 		} else if (phishingScore < 0.5) {
 			console.warn(`LOCAL AI IS SUSPICIOUS, MAKING SERVER-SIDED CHECK FOR SECOND OPINION`);
 		}

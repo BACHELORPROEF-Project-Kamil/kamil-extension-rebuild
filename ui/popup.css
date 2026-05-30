@@ -1,3 +1,15 @@
+/* --- STATUSSEN --- */
+
+/* Critical Status (Rood) */
+body.status-critical .mascot-circle {
+    border-color: #B49191;
+}
+
+/* Warning Status (Geel) */
+body.status-warning .mascot-circle {
+    border-color: #B4B391;
+}
+
 * {
 	box-sizing: border-box;
 	margin: 0;
@@ -16,7 +28,7 @@ body {
 }
 
 body {
-	border: 3px solid #054431;
+	border: 3px solid #91B49B;
 }
 
 .header {
