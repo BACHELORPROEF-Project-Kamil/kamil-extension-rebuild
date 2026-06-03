@@ -189,13 +189,13 @@ async function checkUrl(tabId, url) {
 	try {
 		const lowerUrl = url.toLowerCase();
 
-		if (lowerUrl.includes("google.com") && (lowerUrl.includes("test=warning"))) {
+		if (lowerUrl.includes("google.com") && lowerUrl.includes("test=warning")) {
 			console.log("Test URL detected, showing warning popup.");
 			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");
 			return;
 		}
 
-		if (lowerUrl.includes("google.com") && (lowerUrl.includes("test=critical"))) {
+		if (lowerUrl.includes("google.com") && lowerUrl.includes("test=critical")) {
 			console.log("Test URL detected, showing critical popup.");
 			updateTabStatus(tabId, "PUNYCODE");
 			return;

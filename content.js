@@ -1,5 +1,5 @@
 const iframe = document.createElement("iframe");
-iframe.src = chrome.runtime.getURL("ui/popup.html");
+iframe.src = chrome.runtime.getURL("ui/popup.html?display=iframe");
 
 iframe.style.position = "fixed";
 iframe.style.top = "20px";
@@ -12,14 +12,21 @@ iframe.style.display = "none";
 
 document.body.appendChild(iframe);
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "triggerPopup") {
-        const scenario = message.scenario
+window.addEventListener("message", (event) => {
+	if (event.data && event.data.action === "closeKamilIframe") {
+		iframe.style.display = "none";
+		console.log("Iframe gesloten via window postMessage");
+	}
+});
 
-        if (scenario.status === "critical" || scenario.status === "warning") {
-            iframe.style.display = "block";
-        } else {
-            iframe.style.display = "none";
-        }
-    }
-})
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message.action === "triggerPopup") {
+		const scenario = message.scenario;
+
+		if (scenario.status === "critical" || scenario.status === "warning") {
+			iframe.style.display = "block";
+		} else {
+			iframe.style.display = "none";
+		}
+	}
+});

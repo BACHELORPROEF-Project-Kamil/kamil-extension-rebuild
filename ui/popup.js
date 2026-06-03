@@ -49,6 +49,20 @@ if (reportBtn) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+	const urlParams = new URLSearchParams(window.location.search);
+	const isIframe = urlParams.get("display") === "iframe";
+
+	const closeBtn = document.getElementById("close-btn");
+	if (closeBtn) {
+		if (isIframe) {
+			closeBtn.style.display = "block";
+		}
+
+		closeBtn.addEventListener("click", () => {
+			window.parent.postMessage({ action: "closeKamilIframe" }, "*");
+		});
+	}
+
 	chrome.runtime.sendMessage({ action: "getStatus" }, (res) => {
 		if (res && res.data) {
 			updateUI(res.data);

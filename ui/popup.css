@@ -140,3 +140,27 @@ body {
 .link-danger:hover {
 	color: #ff4d4d;
 }
+
+.header-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.close-btn {
+	display: none;
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+	border: none;
+	background: none;
+	color: #054431;
+	transition:
+		transform 0.2s ease,
+		color 0.2s ease;
+}
+
+.close-btn:hover {
+	transform: scale(1.2);
+	color: #ff0000;
+}
