@@ -36,6 +36,18 @@ function updateUI(scenario) {
 	}
 }
 
+const reportBtn = document.querySelector(".link-danger");
+if (reportBtn) {
+	reportBtn.addEventListener("click", () => {
+		reportBtn.innerText = "Reporting...";
+		reportBtn.disabled = true;
+
+		setTimeout(() => {
+			reportBtn.innerText = "Rapport verzonden ✓";
+		}, 1500);
+	});
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	chrome.runtime.sendMessage({ action: "getStatus" }, (res) => {
 		if (res && res.data) {
