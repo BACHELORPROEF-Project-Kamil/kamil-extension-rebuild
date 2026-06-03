@@ -2,12 +2,12 @@
 
 /* Critical Status (Rood) */
 body.status-critical .mascot-circle {
-    border-color: #B49191;
+	border-color: #b49191;
 }
 
 /* Warning Status (Geel) */
 body.status-warning .mascot-circle {
-    border-color: #B4B391;
+	border-color: #b4b391;
 }
 
 * {
@@ -28,7 +28,7 @@ body {
 }
 
 body {
-	border: 3px solid #91B49B;
+	border: 3px solid #91b49b;
 }
 
 .header {

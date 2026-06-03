@@ -94,6 +94,14 @@ function updateTabStatus(tabId, scenarioKey) {
 
 	chrome.action.setBadgeBackgroundColor({ color: badgeColor, tabId });
 	chrome.action.setBadgeText({ text: badgeText, tabId });
+
+	chrome.tabs
+		.sendMessage(tabId, {
+			action: "triggerPopup",
+			scenarioKey: scenarioKey,
+			scenario: scenario,
+		})
+		.catch((err) => console.error("Error sending message to content script: ", err));
 }
 
 // This listener sends the current scenario status to the popup when it requests it.
@@ -167,7 +175,6 @@ chrome.runtime.onStartup.addListener(() => {
 	performBenchmark();
 });
 
-
 // This alarm runs every x minute(s) to sync the local stats with the server.
 chrome.alarms.create("syncStatsAlarm", { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -179,7 +186,25 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 async function checkUrl(tabId, url) {
 	if (!url || !url.startsWith("http")) return;
 
-    await incrementLocalStats(1, 0);
+	try {
+		const lowerUrl = url.toLowerCase();
+
+		if (lowerUrl.includes("google.com") && (lowerUrl.includes("test=warning"))) {
+			console.log("Test URL detected, showing warning popup.");
+			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");
+			return;
+		}
+
+		if (lowerUrl.includes("google.com") && (lowerUrl.includes("test=critical"))) {
+			console.log("Test URL detected, showing critical popup.");
+			updateTabStatus(tabId, "PUNYCODE");
+			return;
+		}
+	} catch (err) {
+		console.error("Error checking URL string: ", err);
+	}
+
+	await incrementLocalStats(1, 0);
 
 	// Before we begin any checks, we set the status to "SAFE" by default.
 	updateTabStatus(tabId, "SAFE");
@@ -187,7 +212,7 @@ async function checkUrl(tabId, url) {
 	console.log(`Starting security checks for: ${url}`);
 
 	// 1. Blacklist check
-    await incrementLocalStats(0, 1);
+	await incrementLocalStats(0, 1);
 	if (isBlacklisted(url)) {
 		console.warn("URL is blacklisted, showing warning popup.");
 		updateTabStatus(tabId, "BLACKLISTED_URL");
@@ -195,14 +220,14 @@ async function checkUrl(tabId, url) {
 	}
 
 	// 2. Whitelist check
-    await incrementLocalStats(0, 1);
+	await incrementLocalStats(0, 1);
 	if (isWhitelisted(new URL(url).hostname)) {
 		console.log("URL is whitelisted, skipping checks.");
 		return;
 	}
 
 	// 3. Punycode check
-    await incrementLocalStats(0, 1);
+	await incrementLocalStats(0, 1);
 	if (typeof isPunycode === "function") {
 		const isPuny = isPunycode(url);
 		if (isPuny) {
@@ -268,7 +293,7 @@ async function runAIModelCheck(tabId, url) {
 		} catch (scriptErr) {
 			console.warn("Could not extract DOM features. Falling back to URL-only features.", scriptErr.message);
 		}
-        await incrementLocalStats(0, 1);
+		await incrementLocalStats(0, 1);
 
 		const featureArray = await extractFeaturesFromUrl(url, domResults);
 		const inputTensor = tf.tensor2d([featureArray], [1, 31]);

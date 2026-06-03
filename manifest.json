@@ -3,7 +3,7 @@
 	"name": "Kamil",
 	"version": "1.0",
 	"description": "De digitale kameleon die jou beschermd tegen phishing.",
-	"permissions": ["tabs", "webNavigation", "scripting", "alarms", "storage"],
+	"permissions": ["tabs", "scripting", "alarms", "storage"],
 	"host_permissions": ["http://localhost:5001/*", "<all_urls>"],
 	"background": {
 		"service_worker": "background.js"
@@ -17,12 +17,18 @@
 			"128": "icons/icon128.png"
 		}
 	},
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"js": ["content.js"]
+		}
+	],
 	"content_security_policy": {
 		"extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
 	},
 	"web_accessible_resources": [
 		{
-			"resources": ["model/model.json", "model/*.bin", "ui/assets/*.webp", "ui/assets/*.svg"],
+			"resources": ["model/model.json", "model/*.bin", "ui/assets/*.webp", "ui/assets/*.svg", "ui/popup.html", "ui/popup.js", "ui/popup.css"],
 			"matches": ["<all_urls>"]
 		}
 	]
