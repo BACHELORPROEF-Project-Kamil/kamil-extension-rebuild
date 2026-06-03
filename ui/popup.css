@@ -2,12 +2,12 @@
 
 /* Critical Status (Rood) */
 body.status-critical .mascot-circle {
-    border-color: #B49191;
+	border-color: #b49191;
 }
 
 /* Warning Status (Geel) */
 body.status-warning .mascot-circle {
-    border-color: #B4B391;
+	border-color: #b4b391;
 }
 
 * {
@@ -28,7 +28,7 @@ body {
 }
 
 body {
-	border: 3px solid #91B49B;
+	border: 3px solid #91b49b;
 }
 
 .header {
@@ -139,4 +139,28 @@ body {
 
 .link-danger:hover {
 	color: #ff4d4d;
+}
+
+.header-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.close-btn {
+	display: none;
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+	border: none;
+	background: none;
+	color: #054431;
+	transition:
+		transform 0.2s ease,
+		color 0.2s ease;
+}
+
+.close-btn:hover {
+	transform: scale(1.2);
+	color: #ff0000;
 }
