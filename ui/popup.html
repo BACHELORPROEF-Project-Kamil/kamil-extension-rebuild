@@ -15,7 +15,7 @@
 			</div>
 		</header>
 
-		<main class="content-container">
+		<main id="main-view" class="content-container">
 			<div class="mascot-circle">
 				<img src="/ui/assets/kamil_safe.webp" alt="Kamil de kameleon steekt zijn duim op" class="mascot-img" />
 			</div>
@@ -23,6 +23,21 @@
 			<h2 class="status-title">Alles is veilig.</h2>
 			<p class="status-text">Kamil houdt de wacht... u kunt veilig surfen.</p>
 			<a href="#" id="learn-more-link" class="link-primary">Lees hier meer over</a>
+		</main>
+
+		<main id="settings-view" class="content-container" style="display: none;">
+			<h2 class="status-title">Instellingen</h2>
+			<div class="settings-list">
+				<div class="setting-item">
+					<span class="setting-label">Kamil inschakelen</span>
+					<label class="switch">
+						<input type="checkbox" id="kamil-toggle" checked>
+						<span class="slider round"></span>
+					</label>
+				</div>
+				<p class="setting-description">Schakel Kamil uit als je tijdelijk geen bescherming wilt ontvangen.</p>
+			</div>
+			<button id="back-btn" class="link-primary" style="margin-top: 24px; text-decoration: none;">← Terug naar overzicht</button>
 		</main>
 
 		<footer class="footer">
