@@ -590,10 +590,11 @@ async function extractFeaturesFromUrl(urlString, domResults = null) {
 
 		console.log("Local checks done, beginning extraction of server vitals via backend");
 
-		const response = await fetch("http://localhost:5001/api/check-url", {
+		const response = await fetch(`${self.tfConfig.api.baseUrl}/api/check-url`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				"X-Client-Id": self.tfConfig.api.clientId,
 			},
 			body: JSON.stringify({ url: urlString }),
 		});

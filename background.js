@@ -53,10 +53,11 @@ async function syncStatsWithServer(urlCount, checkCount) {
 
 		console.log(`Syncing stats with server: ${urlsChecked} URLs checked, ${checksPerformed} checks performed`);
 
-		const response = await fetch("http://localhost:5001/api/stats/sync", {
+		const response = await fetch(`${self.tfConfig.api.baseUrl}/api/stats/sync`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				"X-Client-Id": self.tfConfig.api.clientId,
 			},
 			body: JSON.stringify({
 				urlsChecked,
