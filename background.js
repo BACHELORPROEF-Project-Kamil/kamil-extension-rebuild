@@ -95,24 +95,41 @@ function updateTabStatus(tabId, scenarioKey) {
 	chrome.action.setBadgeBackgroundColor({ color: badgeColor, tabId });
 	chrome.action.setBadgeText({ text: badgeText, tabId });
 
-	chrome.tabs
-		.sendMessage(tabId, {
-			action: "triggerPopup",
-			scenarioKey: scenarioKey,
-			scenario: scenario,
-		})
-		.catch((err) => console.error("Error sending message to content script: ", err));
+	chrome.tabs.get(tabId, (tab) => {
+		if (chrome.runtime.lastError || !tab || !tab.url || !tab.url.startsWith("http")) {
+			return;
+		}
+
+		chrome.tabs
+			.sendMessage(tabId, {
+				action: "triggerPopup",
+				scenarioKey: scenarioKey,
+				scenario: scenario,
+			})
+			.catch((err) => {
+				console.warn(`Message not sent to tab ${tabId}: ${err.message}`);
+			});
+	});
 }
 
 // This listener sends the current scenario status to the popup when it requests it.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	if (message.action === "getStatus") {
-		chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-			const activeTab = tabs[0];
-			const scenarioKey = currentTabStatus[activeTab?.id] || "SAFE";
-			sendResponse({
-				scenarioKey: scenarioKey,
-				data: scenarios[scenarioKey],
+		chrome.storage.local.get(["kamilEnabled"], (result) => {
+			const isEnabled = result.kamilEnabled !== false;
+
+			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+				const activeTab = tabs[0];
+				let scenarioKey = currentTabStatus[activeTab?.id] || "SAFE";
+
+				if (!isEnabled) {
+					scenarioKey = "DISABLED";
+				}
+
+				sendResponse({
+					scenarioKey: scenarioKey,
+					data: scenarios[scenarioKey],
+				});
 			});
 		});
 		return true;
@@ -185,6 +202,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 async function checkUrl(tabId, url) {
 	if (!url || !url.startsWith("http")) return;
+
+	// Check if Kamil is enabled
+	const settings = await chrome.storage.local.get(["kamilEnabled"]);
+	if (settings.kamilEnabled === false) {
+		console.log("Kamil is disabled, skipping security checks.");
+		chrome.action.setBadgeText({ text: "", tabId });
+		return;
+	}
 
 	try {
 		const lowerUrl = url.toLowerCase();

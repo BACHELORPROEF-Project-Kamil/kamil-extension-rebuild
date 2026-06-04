@@ -25,7 +25,13 @@ const scenarios = Object.freeze({
 		title: "Opgelet: Verdacht.",
 		reason: "AI-model meldt hoog risico.",
 		description: "Kamil's AI-model herkent patronen op deze pagina die sterk lijken op phishing. Wees extra voorzichtig.",
-		blogUrl: "http://localhost:3000/tips-and-guides",
-		//TODO: ADD BLOG ON WEBSITE EXPLAINING AI PREDICTIONS
+		blogUrl: "http://localhost:3000/tips-and-guides/gids/hoe-kamil-ai-jou-beschermt",
+	},
+	DISABLED: {
+		status: "safe",
+		title: "Kamil staat uit.",
+		reason: "Beveiliging is uitgeschakeld.",
+		description: "Je bent momenteel niet beschermd. Schakel Kamil weer in via de instellingen voor optimale veiligheid.",
+		blogUrl: "#",
 	},
 });

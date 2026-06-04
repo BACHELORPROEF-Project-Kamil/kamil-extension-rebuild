@@ -52,6 +52,46 @@ document.addEventListener("DOMContentLoaded", () => {
 	const urlParams = new URLSearchParams(window.location.search);
 	const isIframe = urlParams.get("display") === "iframe";
 
+	const mainView = document.getElementById("main-view");
+	const settingsView = document.getElementById("settings-view");
+	const settingsBtn = document.getElementById("settings-btn");
+	const backBtn = document.getElementById("back-btn");
+	const kamilToggle = document.getElementById("kamil-toggle");
+
+	if (settingsBtn) {
+		settingsBtn.addEventListener("click", () => {
+			mainView.style.display = "none";
+			settingsView.style.display = "flex";
+		});
+	}
+
+	if (backBtn) {
+		backBtn.addEventListener("click", () => {
+			settingsView.style.display = "none";
+			mainView.style.display = "flex";
+		});
+	}
+
+	if (kamilToggle) {
+		chrome.storage.local.get(["kamilEnabled"], (result) => {
+			const isEnabled = result.kamilEnabled !== false;
+			kamilToggle.checked = isEnabled;
+		});
+
+		kamilToggle.addEventListener("change", () => {
+			const isEnabled = kamilToggle.checked;
+			chrome.storage.local.set({ kamilEnabled: isEnabled }, () => {
+				console.log("Kamil status changed to: ", isEnabled);
+				// Refresh status from background
+				chrome.runtime.sendMessage({ action: "getStatus" }, (res) => {
+					if (res && res.data) {
+						updateUI(res.data);
+					}
+				});
+			});
+		});
+	}
+
 	const closeBtn = document.getElementById("close-btn");
 	if (closeBtn) {
 		if (isIframe) {
