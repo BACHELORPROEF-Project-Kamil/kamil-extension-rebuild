@@ -1,5 +1,3 @@
-console.log("URL Tokenizer module loaded.");
-
 // This function checks if the hostname (url) is an IP address or not.
 function checkIPAdress(hostname) {
 	const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
@@ -140,7 +138,6 @@ function checkRequestURL(hostname) {
 			return -1; // Could be phishing
 		}
 	} catch (err) {
-		console.log("Error while checking request URL: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -186,7 +183,6 @@ function checkAnchorURL(hostname) {
 			return -1; // Could be phishing
 		}
 	} catch (err) {
-		console.log("Error while checking anchor URL: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -240,7 +236,6 @@ function checkLinksInScript(hostname) {
 			return -1; // Could be phishing
 		}
 	} catch (err) {
-		console.log("Error while checking links in script: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -274,7 +269,6 @@ function checkServerFormHandler(hostname) {
 		}
         return 1; // Safe
 	} catch (err) {
-		console.log("Error while checking server form handler: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -303,7 +297,6 @@ function checkInfoEmail() {
 
 		return 1; // Likely safe
 	} catch (err) {
-		console.log("Error while checking info email: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -346,7 +339,6 @@ function checkAbnormalURL(hostname, urlString) {
 		}
 		return 1; // Likely safe
 	} catch (err) {
-		console.log("Error while checking abnormal URL: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -365,12 +357,11 @@ function checkWebsiteForwarding() {
 			} else if (redirectCount > 1 && redirectCount < 4) {
 				return 0; // Could be suspicious
 			} else {
-				return -1; // Could be phishing
+				return -1; // Here it was return -1, it stays.
 			}
 		}
 		return 0; // Could be suspicious
 	} catch (err) {
-		console.log("Error while checking website forwarding: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -401,7 +392,6 @@ function checkStatusBarCustomization() {
 
 		return 1; // Likely safe
 	} catch (err) {
-		console.log("Error while checking status bar customization: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -422,7 +412,6 @@ function checkDisabledRightClick() {
 
 		return 1; // Likely safe
 	} catch (err) {
-		console.log("Error while checking disabled right-click: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -449,7 +438,6 @@ function checkUsingPopUpWindow() {
 
 		return 1; // Likely safe
 	} catch (err) {
-		console.log("Error while checking using pop-up window: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -494,7 +482,6 @@ function checkIFrameRedirection() {
 
 		return 0; // Could be suspicious
 	} catch (err) {
-		console.log("Error while checking iframe redirection: ", err);
 		return 0; // Could be suspicious
 	}
 }
@@ -588,8 +575,6 @@ async function extractFeaturesFromUrl(urlString, domResults = null) {
 		features[29] = checkLinksPointingToPage();
 		features[30] = checkStatisticalReport();
 
-		console.log("Local checks done, beginning extraction of server vitals via backend");
-
 		const response = await fetch(`${self.tfConfig.api.baseUrl}/api/check-url`, {
 			method: "POST",
 			headers: {
@@ -612,14 +597,9 @@ async function extractFeaturesFromUrl(urlString, domResults = null) {
 
             // Index 25: DNSRecording
             features[25] = data.features.dnsRecord;
-
-            console.log("Server vitals extracted and features array updated");
-        } else {
-            console.log("Failed to fetch server vitals, keeping default values for those features");
         }
 
 	} catch (err) {
-		console.log("Error while tokenizing URL: ", err);
 	}
 
 	return features;

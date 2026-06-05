@@ -15,7 +15,6 @@ document.body.appendChild(iframe);
 window.addEventListener("message", (event) => {
 	if (event.data && event.data.action === "closeKamilIframe") {
 		iframe.style.display = "none";
-		console.log("Iframe gesloten via window postMessage");
 	}
 });
 

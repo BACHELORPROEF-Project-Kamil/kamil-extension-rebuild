@@ -81,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		kamilToggle.addEventListener("change", () => {
 			const isEnabled = kamilToggle.checked;
 			chrome.storage.local.set({ kamilEnabled: isEnabled }, () => {
-				console.log("Kamil status changed to: ", isEnabled);
 				// Refresh status from background
 				chrome.runtime.sendMessage({ action: "getStatus" }, (res) => {
 					if (res && res.data) {
