@@ -13,8 +13,6 @@ importScripts(
 	"utils/scenarios.js",
 );
 
-console.log("Background script running and modules imported");
-
 let model = null;
 let useLocalAI = false;
 
@@ -51,12 +49,11 @@ async function syncStatsWithServer(urlCount, checkCount) {
 
 		if (urlsChecked === 0) return;
 
-		console.log(`Syncing stats with server: ${urlsChecked} URLs checked, ${checksPerformed} checks performed`);
-
-		const response = await fetch("http://localhost:5001/api/stats/sync", {
+		const response = await fetch(`${self.tfConfig.api.baseUrl}/api/stats/sync`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				"X-Client-Id": self.tfConfig.api.clientId,
 			},
 			body: JSON.stringify({
 				urlsChecked,
@@ -65,7 +62,6 @@ async function syncStatsWithServer(urlCount, checkCount) {
 		});
 
 		if (response.ok) {
-			console.log("Stats synced successfully, resetting local counts.");
 			await chrome.storage.local.set({
 				urlsChecked: 0,
 				checksPerformed: 0,
@@ -139,7 +135,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // This function runs a test benchmark to detemine if the local AI model can be used or not on the client's device.
 async function performBenchmark() {
 	const performanceThreshold = 100; // Time in ms
-	console.log("Starting performance benchmarking");
 
 	try {
 		const startTime = performance.now();
@@ -153,11 +148,9 @@ async function performBenchmark() {
 
 		const endTime = performance.now();
 		const duration = endTime - startTime;
-		console.log(`Performance benchmark completed in ${duration.toFixed(2)}ms`);
 
 		if (duration < performanceThreshold) {
 			useLocalAI = true;
-			console.log("Local AI model performance is sufficient.");
 		} else {
 			useLocalAI = false;
 			console.warn("Performance benchmark exceeded threshold, falling back on server-sided AI");
@@ -170,12 +163,10 @@ async function performBenchmark() {
 // This function loads the AI model and runs the benchmark to determine if local AI can be used on the user's device.
 async function initExtension() {
 	try {
-		console.log("Initializing AI configuration");
 		await tf.setBackend("cpu");
 
 		const modelUrl = chrome.runtime.getURL("model/model.json");
 		model = await tf.loadLayersModel(modelUrl);
-		console.log("AI model loaded successfully");
 
 		await performBenchmark();
 	} catch (err) {
@@ -187,7 +178,6 @@ initExtension();
 
 // This listener starts when the browser starts up and initializes the benchmark.
 chrome.runtime.onStartup.addListener(() => {
-	console.log("Browser started, running benchmark and syncing stats with server...");
 	syncStatsWithServer();
 	performBenchmark();
 });
@@ -206,7 +196,6 @@ async function checkUrl(tabId, url) {
 	// Check if Kamil is enabled
 	const settings = await chrome.storage.local.get(["kamilEnabled"]);
 	if (settings.kamilEnabled === false) {
-		console.log("Kamil is disabled, skipping security checks.");
 		chrome.action.setBadgeText({ text: "", tabId });
 		return;
 	}
@@ -215,13 +204,11 @@ async function checkUrl(tabId, url) {
 		const lowerUrl = url.toLowerCase();
 
 		if (lowerUrl.includes("google.com") && lowerUrl.includes("test=warning")) {
-			console.log("Test URL detected, showing warning popup.");
 			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");
 			return;
 		}
 
 		if (lowerUrl.includes("google.com") && lowerUrl.includes("test=critical")) {
-			console.log("Test URL detected, showing critical popup.");
 			updateTabStatus(tabId, "PUNYCODE");
 			return;
 		}
@@ -234,8 +221,6 @@ async function checkUrl(tabId, url) {
 	// Before we begin any checks, we set the status to "SAFE" by default.
 	updateTabStatus(tabId, "SAFE");
 
-	console.log(`Starting security checks for: ${url}`);
-
 	// 1. Blacklist check
 	await incrementLocalStats(0, 1);
 	if (isBlacklisted(url)) {
@@ -247,7 +232,6 @@ async function checkUrl(tabId, url) {
 	// 2. Whitelist check
 	await incrementLocalStats(0, 1);
 	if (isWhitelisted(new URL(url).hostname)) {
-		console.log("URL is whitelisted, skipping checks.");
 		return;
 	}
 
@@ -256,7 +240,6 @@ async function checkUrl(tabId, url) {
 	if (typeof isPunycode === "function") {
 		const isPuny = isPunycode(url);
 		if (isPuny) {
-			console.log("Punycode detected, stopping further checks.");
 			updateTabStatus(tabId, "PUNYCODE");
 			return;
 		}
@@ -270,14 +253,12 @@ async function checkUrl(tabId, url) {
 // AI Model check function
 async function runAIModelCheck(tabId, url) {
 	if (!useLocalAI || !model) {
-		console.log("Local AI not available or disabled, sending to server-side analysis...");
 		// TODO: IMPLEMENT SERVER-SIDED CHECK LOGIC
 		// Sidenote: I had limited time, so i chose to prioritize the local AI implementation. That way at we can see the AI model in action. I am willing to work on this project further and add the server-sided logic in a future update. For now (final work) i made the decision to just go with local AI only.
 		return;
 	}
 
 	try {
-		console.log("Processing URL with local AI");
 		let domResults = null;
 
 		try {
@@ -328,8 +309,6 @@ async function runAIModelCheck(tabId, url) {
 
 		inputTensor.dispose();
 		prediction.dispose();
-
-		console.log(`AI verdict for ${url}: ${phishingScore.toFixed(4)}`);
 
 		if (phishingScore < 0.2) {
 			updateTabStatus(tabId, "AI_PREDICTION_HIGH_RISK");

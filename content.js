@@ -15,7 +15,6 @@ document.body.appendChild(iframe);
 window.addEventListener("message", (event) => {
 	if (event.data && event.data.action === "closeKamilIframe") {
 		iframe.style.display = "none";
-		console.log("Iframe gesloten via window postMessage");
 	}
 });
 
@@ -25,6 +24,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 		if (scenario.status === "critical" || scenario.status === "warning") {
 			iframe.style.display = "block";
+
+			if (scenario.status === "critical") {
+				iframe.style.height = "612px";
+			} else {
+				iframe.style.height = "549px";
+			}
 		} else {
 			iframe.style.display = "none";
 		}
