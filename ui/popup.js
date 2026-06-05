@@ -8,15 +8,20 @@ function updateUI(scenario) {
 	document.querySelector(".status-text").innerText = scenario.description;
 
 	const mascotImg = document.querySelector(".mascot-img");
+	const leaveBtn = document.getElementById("leave-site-btn");
+
 	if (scenario.status === "critical") {
 		mascotImg.src = "/ui/assets/kamil_critical.webp";
 		mascotImg.alt = "Kamil de kameleon kijkt verschrikt en waarschuwt je";
+		if (leaveBtn) leaveBtn.style.display = "block";
 	} else if (scenario.status === "warning") {
 		mascotImg.src = "/ui/assets/kamil_warning.webp";
 		mascotImg.alt = "Kamil de kameleon kijkt bezorgd en waarschuwt je";
+		if (leaveBtn) leaveBtn.style.display = "none";
 	} else {
 		mascotImg.src = "/ui/assets/kamil_safe.webp";
 		mascotImg.alt = "Kamil de kameleon steekt zijn duim op";
+		if (leaveBtn) leaveBtn.style.display = "none";
 	}
 
 	const learnMoreLink = document.querySelector(".link-primary");
@@ -57,6 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
 	const settingsBtn = document.getElementById("settings-btn");
 	const backBtn = document.getElementById("back-btn");
 	const kamilToggle = document.getElementById("kamil-toggle");
+	const leaveBtn = document.getElementById("leave-site-btn");
+
+	if (leaveBtn) {
+		leaveBtn.addEventListener("click", () => {
+			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+				if (tabs[0]) {
+					chrome.tabs.remove(tabs[0].id);
+				}
+			});
+		});
+	}
 
 	if (settingsBtn) {
 		settingsBtn.addEventListener("click", () => {
