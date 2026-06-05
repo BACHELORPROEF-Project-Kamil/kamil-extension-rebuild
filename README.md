@@ -81,6 +81,7 @@ This is the repository for the **AI-powered browser extension** of my bachelor's
 * [Gemini CLI](https://geminicli.com/) - Advanced agentic CLI used for codebase orchestration and automation.
 * [GitHub Copilot](https://github.com/copilot) - AI pair programmer for rapid prototyping.
 * [Error Handling Insights](https://gemini.google.com/share/6849769945d7) & [Local LM Model Error](https://gemini.google.com/share/3dd0519b8c3c) - AI-assisted debugging logs.
+* [Project cleanup](./AI_CHATS/project_cleanup.md) - Documentation on project cleanup.
 
 ---
 
